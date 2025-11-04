@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -13,36 +13,23 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  IconChevronDown,
-  IconChevronLeft,
-  IconChevronRight,
-  IconChevronsLeft,
-  IconChevronsRight,
-  IconDotsVertical,
-  IconEdit,
-  IconLayoutColumns,
-  IconSearch,
-  IconTrash,
-} from "@tabler/icons-react";
+  MoreHorizontal,
+  ArrowUpDown,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -51,18 +38,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import {
-  Vehicle,
-  EngineType,
-  getEngineTypeDisplay,
-  getCategoryDisplay,
-} from "@/lib/types/vehicle";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
-interface VehiclesTableProps {
-  vehicles: Vehicle[];
-  onEdit: (vehicle: Vehicle) => void;
-  onDelete: (vehicle: Vehicle) => void;
+import { Driver, License, formatDate } from "@/lib/types/driver";
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronsLeft,
+  IconChevronsRight,
+  IconSearch,
+} from "@tabler/icons-react";
+
+interface DriversTableProps {
+  drivers: Driver[];
+  onEdit: (driver: Driver) => void;
+  onDelete: (driver: Driver) => void;
   page: number;
   limit: number;
   total: number;
@@ -71,8 +68,25 @@ interface VehiclesTableProps {
   onLimitChange: (limit: number) => void;
 }
 
-export function VehiclesTable({
-  vehicles,
+// License badge colors
+const getLicenseBadgeVariant = (license: License | null) => {
+  if (!license) return "outline";
+  switch (license) {
+    case License.C:
+      return "default";
+    case License.D:
+      return "secondary";
+    case License.E:
+      return "destructive";
+    case License.G:
+      return "default";
+    default:
+      return "outline";
+  }
+};
+
+export function DriversTable({
+  drivers,
   onEdit,
   onDelete,
   page,
@@ -81,145 +95,115 @@ export function VehiclesTable({
   totalPages,
   onPageChange,
   onLimitChange,
-}: VehiclesTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    averageConsumption: false,
-    engineDisplacement: false,
-    tankCapacity: false,
-  });
+}: DriversTableProps) {
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
 
-  const columns: ColumnDef<Vehicle>[] = [
+  const columns: ColumnDef<Driver>[] = [
     {
-      accessorKey: "plate",
-      header: "Plate",
-      cell: ({ row }) => (
-        <div className="font-medium uppercase">{row.getValue("plate")}</div>
-      ),
-      enableHiding: false,
-    },
-    {
-      accessorKey: "brand",
-      header: "Brand",
-      cell: ({ row }) => <div>{row.getValue("brand")}</div>,
-    },
-    {
-      accessorKey: "model",
-      header: "Model",
-      cell: ({ row }) => <div>{row.getValue("model")}</div>,
-    },
-    {
-      accessorKey: "year",
-      header: "Year",
-      cell: ({ row }) => <div>{row.getValue("year") || "-"}</div>,
-    },
-    {
-      accessorKey: "mileage",
-      header: "Mileage",
-      cell: ({ row }) => <div>{row.getValue("mileage") || "-"}</div>,
-    },
-    {
-      accessorKey: "averageConsumption",
-      header: "Avg. Consumption",
-      cell: ({ row }) => <div>{row.getValue("averageConsumption") || "-"}</div>,
-    },
-    {
-      accessorKey: "engineDisplacement",
-      header: "Engine Capacity",
-      cell: ({ row }) => <div>{row.getValue("engineDisplacement") || "-"}</div>,
-    },
-    {
-      accessorKey: "tankCapacity",
-      header: "Tank Capacity",
-      cell: ({ row }) => <div>{row.getValue("tankCapacity") || "-"}</div>,
-    },
-    {
-      accessorKey: "engineType",
-      header: "Engine Type",
-      cell: ({ row }) => {
-        const engineType = row.getValue("engineType") as EngineType;
-        const getEngineColor = (type: EngineType) => {
-          switch (type) {
-            case EngineType.ELECTRIC:
-              return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-            case EngineType.HYBRID:
-              return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-            case EngineType.DIESEL:
-              return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-            case EngineType.GASOLINE:
-              return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-            default:
-              return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-          }
-        };
-
+      accessorKey: "name",
+      header: ({ column }) => {
         return (
-          <Badge
-            variant="outline"
-            className={`${getEngineColor(engineType)} border-none`}
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            {getEngineTypeDisplay(engineType)}
+            Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("name")}</div>
+      ),
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => {
+        const email = row.getValue("email") as string | null;
+        return <div>{email || "Not set"}</div>;
+      },
+    },
+    {
+      accessorKey: "license",
+      header: "License",
+      cell: ({ row }) => {
+        const license = row.getValue("license") as License | null;
+        return (
+          <Badge variant={getLicenseBadgeVariant(license)}>
+            {license || "Not set"}
           </Badge>
         );
       },
-      filterFn: (row, id, value) => {
-        return value.includes(row.getValue(id));
+    },
+    {
+      accessorKey: "phone",
+      header: "Phone",
+      cell: ({ row }) => {
+        const phone = row.getValue("phone") as string | null;
+        return <div>{phone || "Not set"}</div>;
       },
     },
     {
-      accessorKey: "category",
-      header: "Category",
-      cell: ({ row }) => (
-        <Badge variant="outline">
-          {getCategoryDisplay(row.getValue("category"))}
-        </Badge>
-      ),
+      accessorKey: "birthDate",
+      header: "Birth Date",
+      cell: ({ row }) => {
+        const birthDate = row.getValue("birthDate") as string | null;
+        return <div>{formatDate(birthDate)}</div>;
+      },
     },
     {
-      accessorKey: "available",
+      accessorKey: "isAvailable",
       header: "Status",
       cell: ({ row }) => {
-        const available = row.getValue("available") as boolean;
+        const isAvailable = row.getValue("isAvailable") as boolean;
         return (
-          <Badge
-            variant={available ? "default" : "secondary"}
-            className={
-              available
-                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-none"
-                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-none"
-            }
-          >
-            {available ? "Available" : "Unavailable"}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {isAvailable ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <span className="text-green-600">Available</span>
+              </>
+            ) : (
+              <>
+                <XCircle className="h-4 w-4 text-red-600" />
+                <span className="text-red-600">Unavailable</span>
+              </>
+            )}
+          </div>
         );
       },
     },
     {
       id: "actions",
+      enableHiding: false,
       cell: ({ row }) => {
-        const vehicle = row.original;
+        const driver = row.original;
 
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="size-8 p-0">
+              <Button variant="ghost" className="h-8 w-8 p-0">
                 <span className="sr-only">Open menu</span>
-                <IconDotsVertical className="size-4" />
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(vehicle)}>
-                <IconEdit className="mr-2 size-4" />
-                Edit
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onEdit(driver)}>
+                Edit driver
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => onDelete(vehicle)}
-                className="text-destructive focus:text-destructive"
+                onClick={() => onDelete(driver)}
+                className="text-red-600"
               >
-                <IconTrash className="mr-2 size-4" />
-                Delete
+                Delete driver
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -229,76 +213,45 @@ export function VehiclesTable({
   ];
 
   const table = useReactTable({
-    data: vehicles,
+    data: drivers,
     columns,
-    state: {
-      sorting,
-      columnVisibility,
-      columnFilters,
-    },
-    pageCount: totalPages,
-    manualPagination: true,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
   });
+
+  const handleLimitChange = (newLimit: string) => {
+    onLimitChange(Number(newLimit));
+    onPageChange(1); // Reset to first page when limit changes
+  };
 
   return (
     <div className="space-y-4">
-      {/* Filters and Controls */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center space-x-2">
           <div className="relative flex-1 max-w-sm">
             <IconSearch className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search by plate, brand, or model..."
+              placeholder="Filter by name..."
               value={
-                (table.getColumn("plate")?.getFilterValue() as string) ?? ""
+                (table.getColumn("name")?.getFilterValue() as string) ?? ""
               }
-              onChange={(event) => {
-                const value = event.target.value;
-                table.getColumn("plate")?.setFilterValue(value);
-                table.getColumn("brand")?.setFilterValue(value);
-                table.getColumn("model")?.setFilterValue(value);
-              }}
+              onChange={(event) =>
+                table.getColumn("name")?.setFilterValue(event.target.value)
+              }
               className="pl-8"
             />
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <IconLayoutColumns className="mr-2 size-4" />
-              Columns
-              <IconChevronDown className="ml-2 size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize -tracking-wider"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
-
-      {/* Table */}
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
@@ -342,7 +295,7 @@ export function VehiclesTable({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No vehicles found.
+                  No drivers found.
                 </TableCell>
               </TableRow>
             )}
@@ -350,7 +303,6 @@ export function VehiclesTable({
         </Table>
       </div>
 
-      {/* Pagination */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-muted-foreground">
           Showing {total > 0 ? (page - 1) * limit + 1 : 0} to{" "}

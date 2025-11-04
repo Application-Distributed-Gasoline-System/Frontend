@@ -45,7 +45,7 @@ const data = {
     },
     {
       title: "Drivers",
-      url: "#",
+      url: "/dashboard/drivers",
       icon: IconSteeringWheel,
     },
     {
@@ -60,7 +60,7 @@ const data = {
     },
     {
       title: "Users",
-      url: "#",
+      url: "/dashboard/users",
       icon: IconUsers,
     },
   ],

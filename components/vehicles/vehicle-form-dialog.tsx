@@ -66,7 +66,10 @@ export function VehicleFormDialog({
       category: MachineryType.LIGHT,
       available: true,
       year: new Date().getFullYear(),
-      tankCapacity: undefined,
+      tankCapacity: 0,
+      engineDisplacement: 0,
+      averageConsumption: 0,
+      mileage: 0,
     },
   });
 
@@ -83,6 +86,9 @@ export function VehicleFormDialog({
           available: vehicle.available,
           year: vehicle.year,
           tankCapacity: vehicle.tankCapacity,
+          engineDisplacement: vehicle.engineDisplacement,
+          averageConsumption: vehicle.averageConsumption,
+          mileage: vehicle.mileage,
         });
       } else {
         form.reset({
@@ -93,7 +99,10 @@ export function VehicleFormDialog({
           category: MachineryType.LIGHT,
           available: true,
           year: new Date().getFullYear(),
-          tankCapacity: undefined,
+          tankCapacity: 0,
+          engineDisplacement: 0,
+          averageConsumption: 0,
+          mileage: 0,
         });
       }
     }
@@ -232,18 +241,10 @@ export function VehicleFormDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value={EngineType.GASOLINE}>
-                          Gasoline
-                        </SelectItem>
-                        <SelectItem value={EngineType.DIESEL}>
-                          Diesel
-                        </SelectItem>
-                        <SelectItem value={EngineType.ELECTRIC}>
-                          Electric
-                        </SelectItem>
-                        <SelectItem value={EngineType.HYBRID}>
-                          Hybrid
-                        </SelectItem>
+                        <SelectItem value="GASOLINE">Gasoline</SelectItem>
+                        <SelectItem value="DIESEL">Diesel</SelectItem>
+                        <SelectItem value="ELECTRIC">Electric</SelectItem>
+                        <SelectItem value="HYBRID">Hybrid</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -270,12 +271,8 @@ export function VehicleFormDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value={MachineryType.LIGHT}>
-                          Light
-                        </SelectItem>
-                        <SelectItem value={MachineryType.HEAVY}>
-                          Heavy
-                        </SelectItem>
+                        <SelectItem value="LIGHT">Light</SelectItem>
+                        <SelectItem value="HEAVY">Heavy</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -299,7 +296,7 @@ export function VehicleFormDialog({
                         onChange={(e) =>
                           field.onChange(
                             e.target.value
-                              ? parseFloat(e.target.value)
+                              ? parseInt(e.target.value)
                               : undefined
                           )
                         }
@@ -309,6 +306,37 @@ export function VehicleFormDialog({
                     </FormControl>
                     <FormDescription>
                       Optional: Tank capacity in gallons
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Milleage */}
+              <FormField
+                control={form.control}
+                name="mileage"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Mileage (km)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="1"
+                        placeholder="0"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined
+                          )
+                        }
+                        value={field.value || ""}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Optional: Milleage in kilometers
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -47,3 +47,7 @@ next-env.d.ts
 .env.production.local
 
 /.vscode/*
+.claude
+AUTH_INTEGRATION.md
+info.md
+VEHICLES_IMPLEMENTATION.md

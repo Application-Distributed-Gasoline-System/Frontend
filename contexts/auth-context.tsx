@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { loginUser, logoutUser, type AuthResponse } from "@/lib/api/auth";
+import { loginUser, logoutUser, refreshAccessToken, type AuthResponse } from "@/lib/api/auth";
 import {
   getToken,
   setToken,
@@ -27,6 +27,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshToken: () => Promise<boolean>;
   error: string | null;
   clearError: () => void;
 }
@@ -48,17 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const refreshToken = getRefreshToken();
       const storedUser = getUser();
 
-      if (storedToken && storedUser) {
-        // Verify token is still valid
-        // const isValid = await verifyToken(storedToken);
-
-        // if (isValid) {
+      if (storedToken && storedUser && refreshToken) {
         setTokenState(storedToken);
         setRefreshTokenState(refreshToken);
         setUserState(storedUser);
-        // } else {
-        //   clearAuth();
-        // }
       }
 
       setIsLoading(false);
@@ -66,6 +60,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initAuth();
   }, []);
+
+  // Listen for token refresh failures from the API client
+  useEffect(() => {
+    const handleTokenRefreshFailed = () => {
+      // Clear auth state and redirect to login
+      clearAuth();
+      setTokenState(null);
+      setRefreshTokenState(null);
+      setUserState(null);
+      router.push('/login');
+    };
+
+    window.addEventListener('auth:token-refresh-failed', handleTokenRefreshFailed);
+
+    return () => {
+      window.removeEventListener('auth:token-refresh-failed', handleTokenRefreshFailed);
+    };
+  }, [router]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -100,12 +112,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshTokenMethod = async (): Promise<boolean> => {
+    try {
+      const currentRefreshToken = getRefreshToken();
+      const currentToken = getToken();
+      if (!currentRefreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      if (!currentToken) {
+        throw new Error('No token available');
+      }
+
+      const response: AuthResponse = await refreshAccessToken(currentRefreshToken, currentToken);
+      
+      // Update tokens in storage
+      setToken(response.accessToken);
+      setRefreshToken(response.refreshToken);
+      setUser(response.user);
+
+      // Update state
+      setTokenState(response.accessToken);
+      setRefreshTokenState(response.refreshToken);
+      setUserState(response.user);
+
+      return true;
+    } catch (err) {
+      console.error('Token refresh failed:', err);
+      // Clear auth state
+      clearAuth();
+      setTokenState(null);
+      setRefreshTokenState(null);
+      setUserState(null);
+      return false;
+    }
+  };
+
   const logout = async () => {
     try {
       setIsLoading(true);
 
-      if (refreshToken) {
-        await logoutUser(refreshToken);
+      if (refreshToken && token) {
+        await logoutUser(refreshToken, token);
       }
     } catch (err) {
       console.error("Logout error:", err);
@@ -133,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!user && !!token,
     login,
     logout,
+    refreshToken: refreshTokenMethod,
     error,
     clearError,
   };
