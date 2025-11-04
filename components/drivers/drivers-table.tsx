@@ -1,0 +1,342 @@
+"use client";
+
+import * as React from "react";
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { MoreHorizontal, ArrowUpDown, CheckCircle2, XCircle } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+import { Driver, License, formatDate } from "@/lib/types/driver";
+
+interface DriversTableProps {
+  drivers: Driver[];
+  onEdit: (driver: Driver) => void;
+  onDelete: (driver: Driver) => void;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
+}
+
+// License badge colors
+const getLicenseBadgeVariant = (license: License | null) => {
+  if (!license) return "outline";
+  switch (license) {
+    case License.C:
+      return "default";
+    case License.D:
+      return "secondary";
+    case License.E:
+      return "destructive";
+    case License.G:
+      return "default";
+    default:
+      return "outline";
+  }
+};
+
+export function DriversTable({
+  drivers,
+  onEdit,
+  onDelete,
+  page,
+  limit,
+  total,
+  totalPages,
+  onPageChange,
+  onLimitChange,
+}: DriversTableProps) {
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+
+  const columns: ColumnDef<Driver>[] = [
+    {
+      accessorKey: "name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => {
+        const email = row.getValue("email") as string | null;
+        return <div>{email || "Not set"}</div>;
+      },
+    },
+    {
+      accessorKey: "license",
+      header: "License",
+      cell: ({ row }) => {
+        const license = row.getValue("license") as License | null;
+        return (
+          <Badge variant={getLicenseBadgeVariant(license)}>
+            {license || "Not set"}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "phone",
+      header: "Phone",
+      cell: ({ row }) => {
+        const phone = row.getValue("phone") as string | null;
+        return <div>{phone || "Not set"}</div>;
+      },
+    },
+    {
+      accessorKey: "birthDate",
+      header: "Birth Date",
+      cell: ({ row }) => {
+        const birthDate = row.getValue("birthDate") as string | null;
+        return <div>{formatDate(birthDate)}</div>;
+      },
+    },
+    {
+      accessorKey: "isAvailable",
+      header: "Status",
+      cell: ({ row }) => {
+        const isAvailable = row.getValue("isAvailable") as boolean;
+        return (
+          <div className="flex items-center gap-2">
+            {isAvailable ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <span className="text-green-600">Available</span>
+              </>
+            ) : (
+              <>
+                <XCircle className="h-4 w-4 text-red-600" />
+                <span className="text-red-600">Unavailable</span>
+              </>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const driver = row.original;
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onEdit(driver)}>
+                Edit driver
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => onDelete(driver)}
+                className="text-red-600"
+              >
+                Delete driver
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
+  const table = useReactTable({
+    data: drivers,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+  });
+
+  const handleLimitChange = (newLimit: string) => {
+    onLimitChange(Number(newLimit));
+    onPageChange(1); // Reset to first page when limit changes
+  };
+
+  return (
+    <div className="w-full">
+      <div className="flex items-center py-4">
+        <Input
+          placeholder="Filter by name..."
+          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          onChange={(event) =>
+            table.getColumn("name")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  No drivers found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          Showing {(page - 1) * limit + 1} to{" "}
+          {Math.min(page * limit, total)} of {total} driver(s)
+        </div>
+        <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-2">
+            <p className="text-sm font-medium">Rows per page</p>
+            <Select value={limit.toString()} onValueChange={handleLimitChange}>
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={limit.toString()} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[10, 20, 30, 40, 50].map((pageSize) => (
+                  <SelectItem key={pageSize} value={pageSize.toString()}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(1)}
+              disabled={page === 1}
+            >
+              First
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page === 1}
+            >
+              Previous
+            </Button>
+            <div className="text-sm font-medium">
+              Page {page} of {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= totalPages}
+            >
+              Next
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(totalPages)}
+              disabled={page >= totalPages}
+            >
+              Last
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

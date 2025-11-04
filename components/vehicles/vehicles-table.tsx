@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -9,10 +9,9 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table';
+} from "@tanstack/react-table";
 import {
   IconChevronDown,
   IconChevronLeft,
@@ -24,9 +23,9 @@ import {
   IconLayoutColumns,
   IconSearch,
   IconTrash,
-} from '@tabler/icons-react';
+} from "@tabler/icons-react";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -34,16 +33,16 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -51,76 +50,115 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   Vehicle,
   EngineType,
   getEngineTypeDisplay,
   getCategoryDisplay,
-} from '@/lib/types/vehicle';
+} from "@/lib/types/vehicle";
 
 interface VehiclesTableProps {
   vehicles: Vehicle[];
   onEdit: (vehicle: Vehicle) => void;
   onDelete: (vehicle: Vehicle) => void;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
 }
 
-export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps) {
+export function VehiclesTable({
+  vehicles,
+  onEdit,
+  onDelete,
+  page,
+  limit,
+  total,
+  totalPages,
+  onPageChange,
+  onLimitChange,
+}: VehiclesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 10,
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    averageConsumption: false,
+    engineDisplacement: false,
+    tankCapacity: false,
   });
 
   const columns: ColumnDef<Vehicle>[] = [
     {
-      accessorKey: 'plate',
-      header: 'Plate',
+      accessorKey: "plate",
+      header: "Plate",
       cell: ({ row }) => (
-        <div className="font-medium uppercase">{row.getValue('plate')}</div>
+        <div className="font-medium uppercase">{row.getValue("plate")}</div>
       ),
       enableHiding: false,
     },
     {
-      accessorKey: 'brand',
-      header: 'Brand',
-      cell: ({ row }) => <div>{row.getValue('brand')}</div>,
+      accessorKey: "brand",
+      header: "Brand",
+      cell: ({ row }) => <div>{row.getValue("brand")}</div>,
     },
     {
-      accessorKey: 'model',
-      header: 'Model',
-      cell: ({ row }) => <div>{row.getValue('model')}</div>,
+      accessorKey: "model",
+      header: "Model",
+      cell: ({ row }) => <div>{row.getValue("model")}</div>,
     },
     {
-      accessorKey: 'year',
-      header: 'Year',
-      cell: ({ row }) => <div>{row.getValue('year') || '-'}</div>,
+      accessorKey: "year",
+      header: "Year",
+      cell: ({ row }) => <div>{row.getValue("year") || "-"}</div>,
     },
     {
-      accessorKey: 'engineType',
-      header: 'Engine Type',
+      accessorKey: "mileage",
+      header: "Mileage",
+      cell: ({ row }) => <div>{row.getValue("mileage") || "-"}</div>,
+    },
+    {
+      accessorKey: "averageConsumption",
+      header: "Avg. Consumption",
+      cell: ({ row }) => <div>{row.getValue("averageConsumption") || "-"}</div>,
+    },
+    {
+      accessorKey: "engineDisplacement",
+      header: "Engine Capacity",
+      cell: ({ row }) => <div>{row.getValue("engineDisplacement") || "-"}</div>,
+    },
+    {
+      accessorKey: "tankCapacity",
+      header: "Tank Capacity",
+      cell: ({ row }) => <div>{row.getValue("tankCapacity") || "-"}</div>,
+    },
+    {
+      accessorKey: "engineType",
+      header: "Engine Type",
       cell: ({ row }) => {
-        const engineType = row.getValue('engineType') as EngineType;
+        const engineType = row.getValue("engineType") as EngineType;
         const getEngineColor = (type: EngineType) => {
           switch (type) {
             case EngineType.ELECTRIC:
-              return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+              return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
             case EngineType.HYBRID:
-              return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+              return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
             case EngineType.DIESEL:
-              return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+              return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
             case EngineType.GASOLINE:
-              return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+              return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
             default:
-              return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+              return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
           }
         };
 
         return (
-          <Badge variant="outline" className={`${getEngineColor(engineType)} border-none`}>
+          <Badge
+            variant="outline"
+            className={`${getEngineColor(engineType)} border-none`}
+          >
             {getEngineTypeDisplay(engineType)}
           </Badge>
         );
@@ -130,35 +168,35 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
       },
     },
     {
-      accessorKey: 'category',
-      header: 'Category',
+      accessorKey: "category",
+      header: "Category",
       cell: ({ row }) => (
         <Badge variant="outline">
-          {getCategoryDisplay(row.getValue('category'))}
+          {getCategoryDisplay(row.getValue("category"))}
         </Badge>
       ),
     },
     {
-      accessorKey: 'available',
-      header: 'Status',
+      accessorKey: "available",
+      header: "Status",
       cell: ({ row }) => {
-        const available = row.getValue('available') as boolean;
+        const available = row.getValue("available") as boolean;
         return (
           <Badge
-            variant={available ? 'default' : 'secondary'}
+            variant={available ? "default" : "secondary"}
             className={
               available
-                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-none'
-                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-none'
+                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-none"
+                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-none"
             }
           >
-            {available ? 'Available' : 'Unavailable'}
+            {available ? "Available" : "Unavailable"}
           </Badge>
         );
       },
     },
     {
-      id: 'actions',
+      id: "actions",
       cell: ({ row }) => {
         const vehicle = row.original;
 
@@ -197,15 +235,14 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
       sorting,
       columnVisibility,
       columnFilters,
-      pagination,
     },
+    pageCount: totalPages,
+    manualPagination: true,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
@@ -218,12 +255,14 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
             <IconSearch className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
               placeholder="Search by plate, brand, or model..."
-              value={(table.getColumn('plate')?.getFilterValue() as string) ?? ''}
+              value={
+                (table.getColumn("plate")?.getFilterValue() as string) ?? ""
+              }
               onChange={(event) => {
                 const value = event.target.value;
-                table.getColumn('plate')?.setFilterValue(value);
-                table.getColumn('brand')?.setFilterValue(value);
-                table.getColumn('model')?.setFilterValue(value);
+                table.getColumn("plate")?.setFilterValue(value);
+                table.getColumn("brand")?.setFilterValue(value);
+                table.getColumn("model")?.setFilterValue(value);
               }}
               className="pl-8"
             />
@@ -245,9 +284,11 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
                 return (
                   <DropdownMenuCheckboxItem
                     key={column.id}
-                    className="capitalize"
+                    className="capitalize -tracking-wider"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
@@ -268,7 +309,10 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                     </TableHead>
                   );
                 })}
@@ -278,17 +322,26 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No vehicles found.
                 </TableCell>
               </TableRow>
@@ -300,12 +353,8 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
       {/* Pagination */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-muted-foreground">
-          Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-          {Math.min(
-            (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-            table.getFilteredRowModel().rows.length
-          )}{' '}
-          of {table.getFilteredRowModel().rows.length} vehicles
+          Showing {total > 0 ? (page - 1) * limit + 1 : 0} to{" "}
+          {Math.min(page * limit, total)} of {total} vehicles
         </div>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
@@ -313,13 +362,13 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
               Rows per page
             </Label>
             <Select
-              value={`${table.getState().pagination.pageSize}`}
+              value={`${limit}`}
               onValueChange={(value) => {
-                table.setPageSize(Number(value));
+                onLimitChange(Number(value));
               }}
             >
               <SelectTrigger id="rows-per-page" className="w-20">
-                <SelectValue placeholder={table.getState().pagination.pageSize} />
+                <SelectValue placeholder={limit} />
               </SelectTrigger>
               <SelectContent side="top">
                 {[10, 20, 30, 40, 50].map((pageSize) => (
@@ -334,8 +383,8 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
             <Button
               variant="outline"
               className="hidden size-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => onPageChange(1)}
+              disabled={page <= 1}
             >
               <span className="sr-only">Go to first page</span>
               <IconChevronsLeft className="size-4" />
@@ -343,20 +392,20 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
             <Button
               variant="outline"
               className="size-8 p-0"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
             >
               <span className="sr-only">Go to previous page</span>
               <IconChevronLeft className="size-4" />
             </Button>
             <div className="text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+              Page {page} of {totalPages}
             </div>
             <Button
               variant="outline"
               className="size-8 p-0"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= totalPages}
             >
               <span className="sr-only">Go to next page</span>
               <IconChevronRight className="size-4" />
@@ -364,8 +413,8 @@ export function VehiclesTable({ vehicles, onEdit, onDelete }: VehiclesTableProps
             <Button
               variant="outline"
               className="hidden size-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
+              onClick={() => onPageChange(totalPages)}
+              disabled={page >= totalPages}
             >
               <span className="sr-only">Go to last page</span>
               <IconChevronsRight className="size-4" />

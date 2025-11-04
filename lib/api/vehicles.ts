@@ -1,186 +1,105 @@
-import { getToken } from '@/lib/auth/storage';
 import {
   Vehicle,
   VehicleFormData,
   ApiVehiclesResponse,
+  VehiclesResponse,
   ApiVehicle,
+  ApiVehicleRequest,
   mapApiVehicleToVehicle,
   mapVehicleFormToApi
 } from '@/lib/types/vehicle';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+import { apiClient, makeApiCall, API_BASE_URL } from './client';
 
 export interface ApiError {
   message: string;
   statusCode?: number;
 }
 
-
 /**
- * Get authorization headers with JWT token
+ * Get all vehicles with pagination
  */
-function getAuthHeaders(): HeadersInit {
-  const token = getToken();
+export async function getVehicles(page?: number, limit?: number): Promise<VehiclesResponse> {
+  // Build query string with pagination parameters
+  const params = new URLSearchParams();
+  if (page !== undefined) params.append('page', page.toString());
+  if (limit !== undefined) params.append('limit', limit.toString());
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+
+  const data = await makeApiCall<ApiVehiclesResponse>(
+    () => apiClient.get(`${API_BASE_URL}/vehicles${queryString}`),
+    'Failed to fetch vehicles'
+  );
+
+  // Map backend vehicles to frontend format and include pagination metadata
   return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
+    vehicles: data.vehicles.map(mapApiVehicleToVehicle),
+    total: data.total,
+    page: data.page,
+    totalPages: data.totalPages,
   };
-}
-
-/**
- * Handle API errors
- */
-function handleApiError(error: ApiError): never {
-  if (error.statusCode) {
-    throw error;
-  }
-  throw {
-    message: 'Network error. Please check your connection.',
-    statusCode: 0,
-  } as ApiError;
-}
-
-/**
- * Get all vehicles
- */
-export async function getVehicles(): Promise<Vehicle[]> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/vehicles`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Failed to fetch vehicles' }));
-      throw {
-        message: errorData.message || 'Failed to fetch vehicles',
-        statusCode: response.status,
-      } as ApiError;
-    }
-
-    const data: ApiVehiclesResponse = await response.json();
-
-    // Map backend vehicles to frontend format
-    return data.vehicles.map(mapApiVehicleToVehicle);
-  } catch (error) {
-    return handleApiError(error as ApiError);
-  }
 }
 
 /**
  * Get a single vehicle by ID
  */
 export async function getVehicleById(id: string): Promise<Vehicle> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Failed to fetch vehicle' }));
-      throw {
-        message: errorData.message || 'Failed to fetch vehicle',
-        statusCode: response.status,
-      } as ApiError;
-    }
-
-    const data: ApiVehicle = await response.json();
-    return mapApiVehicleToVehicle(data);
-  } catch (error) {
-    return handleApiError(error as ApiError);
-  }
+  const data = await makeApiCall<ApiVehicle>(
+    () => apiClient.get(`${API_BASE_URL}/vehicles/${id}`),
+    'Failed to fetch vehicle'
+  );
+  
+  return mapApiVehicleToVehicle(data);
 }
 
 /**
  * Create a new vehicle
  */
 export async function createVehicle(vehicleData: VehicleFormData): Promise<Vehicle> {
-  try {
-    const apiData = mapVehicleFormToApi(vehicleData);
-
-    const response = await fetch(`${API_BASE_URL}/vehicles`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(apiData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Failed to create vehicle' }));
-      throw {
-        message: errorData.message || 'Failed to create vehicle',
-        statusCode: response.status,
-      } as ApiError;
-    }
-
-    const data: ApiVehicle = await response.json();
-    return mapApiVehicleToVehicle(data);
-  } catch (error) {
-    return handleApiError(error as ApiError);
-  }
+  const apiData = mapVehicleFormToApi(vehicleData);
+  
+  const data = await makeApiCall<ApiVehicle>(
+    () => apiClient.post(`${API_BASE_URL}/vehicles`, apiData),
+    'Failed to create vehicle'
+  );
+  
+  return mapApiVehicleToVehicle(data);
 }
 
 /**
  * Update an existing vehicle
  */
 export async function updateVehicle(id: string, vehicleData: Partial<VehicleFormData>): Promise<Vehicle> {
-  try {
-    // Convert partial form data to API format
-    const apiData: Partial<Omit<ApiVehicle, 'id'>> = {};
+  // Convert partial form data to API request format
+  const apiData: Partial<ApiVehicleRequest> = {};
 
-    if (vehicleData.plate !== undefined) apiData.plate = vehicleData.plate;
-    if (vehicleData.brand !== undefined) apiData.brand = vehicleData.brand;
-    if (vehicleData.model !== undefined) apiData.model = vehicleData.model;
-    if (vehicleData.year !== undefined) apiData.year = vehicleData.year;
-    if (vehicleData.engineType !== undefined) apiData.engineType = vehicleData.engineType;
-    if (vehicleData.category !== undefined) apiData.machineryType = vehicleData.category;
-    if (vehicleData.tankCapacity !== undefined) apiData.tankCapacity = vehicleData.tankCapacity;
-    if (vehicleData.engineDisplacement !== undefined) apiData.engineDisplacement = vehicleData.engineDisplacement;
-    if (vehicleData.averageConsumption !== undefined) apiData.averageConsumption = vehicleData.averageConsumption;
-    if (vehicleData.mileage !== undefined) apiData.mileage = vehicleData.mileage;
-    if (vehicleData.available !== undefined) apiData.available = vehicleData.available;
+  if (vehicleData.plate !== undefined) apiData.plate = vehicleData.plate;
+  if (vehicleData.brand !== undefined) apiData.brand = vehicleData.brand;
+  if (vehicleData.model !== undefined) apiData.model = vehicleData.model;
+  if (vehicleData.year !== undefined) apiData.year = vehicleData.year;
+  if (vehicleData.engineType !== undefined) apiData.engineType = vehicleData.engineType;
+  if (vehicleData.category !== undefined) apiData.machineryType = vehicleData.category;
+  if (vehicleData.tankCapacity !== undefined) apiData.tankCapacity = vehicleData.tankCapacity;
+  if (vehicleData.engineDisplacement !== undefined) apiData.engineDisplacement = vehicleData.engineDisplacement;
+  if (vehicleData.averageConsumption !== undefined) apiData.averageConsumption = vehicleData.averageConsumption;
+  if (vehicleData.mileage !== undefined) apiData.mileage = vehicleData.mileage;
+  if (vehicleData.available !== undefined) apiData.available = vehicleData.available;
 
-    const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(apiData),
-    });
+  const data = await makeApiCall<ApiVehicle>(
+    () => apiClient.patch(`${API_BASE_URL}/vehicles/${id}`, apiData),
+    'Failed to update vehicle'
+  );
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Failed to update vehicle' }));
-      throw {
-        message: errorData.message || 'Failed to update vehicle',
-        statusCode: response.status,
-      } as ApiError;
-    }
-
-    const data: ApiVehicle = await response.json();
-    return mapApiVehicleToVehicle(data);
-  } catch (error) {
-    return handleApiError(error as ApiError);
-  }
+  return mapApiVehicleToVehicle(data);
 }
 
 /**
  * Delete a vehicle
  */
 export async function deleteVehicle(id: string): Promise<void> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Failed to delete vehicle' }));
-      throw {
-        message: errorData.message || 'Failed to delete vehicle',
-        statusCode: response.status,
-      } as ApiError;
-    }
-  } catch (error) {
-    return handleApiError(error as ApiError);
-  }
+  await makeApiCall<void>(
+    () => apiClient.delete(`${API_BASE_URL}/vehicles/${id}`),
+    'Failed to delete vehicle'
+  );
 }
 
 /**

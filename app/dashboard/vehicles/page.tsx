@@ -36,16 +36,24 @@ export default function VehiclesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch vehicles on mount
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  // Fetch vehicles on mount and when pagination changes
   useEffect(() => {
     fetchVehicles();
-  }, []);
+  }, [page, limit]);
 
   const fetchVehicles = async () => {
     try {
       setIsLoading(true);
-      const data = await getVehicles();
-      setVehicles(data);
+      const response = await getVehicles(page, limit);
+      setVehicles(response.vehicles);
+      setTotal(response.total);
+      setTotalPages(response.totalPages);
     } catch (error: unknown) {
       let errorMessage = "Failed to load vehicles";
       if (error instanceof Error) {
@@ -125,6 +133,15 @@ export default function VehiclesPage() {
     }
   };
 
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
+  };
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       {/* Header */}
@@ -180,6 +197,12 @@ export default function VehiclesPage() {
           vehicles={vehicles}
           onEdit={handleEditVehicle}
           onDelete={handleDeleteClick}
+          page={page}
+          limit={limit}
+          total={total}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
         />
       )}
       {/* Dialogs */}

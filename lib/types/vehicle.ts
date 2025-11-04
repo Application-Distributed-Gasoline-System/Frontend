@@ -1,28 +1,46 @@
 import { z } from 'zod';
 
-// Engine type enum (matching backend numeric values)
 export enum EngineType {
-  DIESEL = 0,
-  GASOLINE = 1,
-  ELECTRIC = 2,
-  HYBRID = 3,
+  DIESEL = "DIESEL",
+  GASOLINE = "GASOLINE", 
+  ELECTRIC = "ELECTRIC",
+  HYBRID = "HYBRID"
 }
 
-// Machinery type enum (matching backend numeric values)
 export enum MachineryType {
-  LIGHT = 0,
-  HEAVY = 1,
+  LIGHT = "LIGHT",
+  HEAVY = "HEAVY"
 }
 
-// Backend API response structure for a single vehicle
+// Mapping arrays to convert numeric API responses to string enums
+// These match the backend proto enum order
+export const ENGINE_TYPE_MAP = ['GASOLINE', 'DIESEL', 'ELECTRIC', 'HYBRID'] as const;
+export const MACHINERY_TYPE_MAP = ['LIGHT', 'HEAVY'] as const;
+
+// Backend API response structure for a single vehicle (returns numbers from gRPC)
 export interface ApiVehicle {
   id: number;
   plate: string;
   brand: string;
   model: string;
   year: number;
-  engineType: number; // 0=DIESEL, 1=GASOLINE, 2=ELECTRIC, 3=HYBRID
-  machineryType: number; // 0=LIGHT, 1=HEAVY
+  engineType: number;
+  machineryType: number;
+  tankCapacity: number;
+  engineDisplacement: number;
+  averageConsumption: number;
+  mileage: number;
+  available: boolean;
+}
+
+// Backend API request structure (accepts strings in DTO validation)
+export interface ApiVehicleRequest {
+  plate: string;
+  brand: string;
+  model: string;
+  year: number;
+  engineType: string;
+  machineryType: string;
   tankCapacity: number;
   engineDisplacement: number;
   averageConsumption: number;
@@ -33,6 +51,14 @@ export interface ApiVehicle {
 // Backend API response for vehicles list
 export interface ApiVehiclesResponse {
   vehicles: ApiVehicle[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+// Frontend vehicles response with pagination metadata
+export interface VehiclesResponse {
+  vehicles: Vehicle[];
   total: number;
   page: number;
   totalPages: number;
@@ -70,16 +96,12 @@ export const vehicleFormSchema = z.object({
     .int()
     .min(2000, 'Year must be 2000 or later')
     .max(new Date().getFullYear() + 1, 'Year cannot be in the future'),
-  engineType: z.enum(EngineType),
-  category: z.enum(MachineryType),
-  tankCapacity: z.number()
-    .positive('Tank capacity must be positive'),
-  engineDisplacement: z.number()
-    .positive('Engine displacement must be positive'),
-  averageConsumption: z.number()
-    .positive('Average consumption must be positive'),
-  mileage: z.number()
-    .min(0, 'Mileage cannot be negative'),
+  engineType: z.enum([EngineType.GASOLINE, EngineType.DIESEL, EngineType.ELECTRIC, EngineType.HYBRID]),
+  category: z.enum([MachineryType.LIGHT, MachineryType.HEAVY]),
+  tankCapacity: z.number(),
+  engineDisplacement: z.number(),
+  averageConsumption: z.number(),
+  mileage: z.number(),
   available: z.boolean(),
 });
 
@@ -95,8 +117,8 @@ export function mapApiVehicleToVehicle(apiVehicle: ApiVehicle): Vehicle {
     brand: apiVehicle.brand,
     model: apiVehicle.model,
     year: apiVehicle.year,
-    engineType: apiVehicle.engineType as EngineType,
-    category: apiVehicle.machineryType as MachineryType,
+    engineType: ENGINE_TYPE_MAP[apiVehicle.engineType] as EngineType,
+    category: MACHINERY_TYPE_MAP[apiVehicle.machineryType] as MachineryType,
     tankCapacity: apiVehicle.tankCapacity,
     engineDisplacement: apiVehicle.engineDisplacement,
     averageConsumption: apiVehicle.averageConsumption,
@@ -106,9 +128,9 @@ export function mapApiVehicleToVehicle(apiVehicle: ApiVehicle): Vehicle {
 }
 
 /**
- * Convert frontend vehicle form data to backend API format
+ * Convert frontend vehicle form data to backend API request format
  */
-export function mapVehicleFormToApi(formData: VehicleFormData): Omit<ApiVehicle, 'id'> {
+export function mapVehicleFormToApi(formData: VehicleFormData): ApiVehicleRequest {
   return {
     plate: formData.plate,
     brand: formData.brand,
