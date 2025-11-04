@@ -12,7 +12,12 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreHorizontal, ArrowUpDown, CheckCircle2, XCircle } from "lucide-react";
+import {
+  MoreHorizontal,
+  ArrowUpDown,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -42,6 +48,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 import { Driver, License, formatDate } from "@/lib/types/driver";
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronsLeft,
+  IconChevronsRight,
+  IconSearch,
+} from "@tabler/icons-react";
 
 interface DriversTableProps {
   drivers: Driver[];
@@ -84,8 +97,11 @@ export function DriversTable({
   onLimitChange,
 }: DriversTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
 
   const columns: ColumnDef<Driver>[] = [
     {
@@ -101,7 +117,9 @@ export function DriversTable({
           </Button>
         );
       },
-      cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("name")}</div>
+      ),
     },
     {
       accessorKey: "email",
@@ -216,18 +234,25 @@ export function DriversTable({
   };
 
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter by name..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 items-center space-x-2">
+          <div className="relative flex-1 max-w-sm">
+            <IconSearch className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter by name..."
+              value={
+                (table.getColumn("name")?.getFilterValue() as string) ?? ""
+              }
+              onChange={(event) =>
+                table.getColumn("name")?.setFilterValue(event.target.value)
+              }
+              className="pl-8"
+            />
+          </div>
+        </div>
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-lg border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -277,62 +302,74 @@ export function DriversTable({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          Showing {(page - 1) * limit + 1} to{" "}
-          {Math.min(page * limit, total)} of {total} driver(s)
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-muted-foreground">
+          Showing {total > 0 ? (page - 1) * limit + 1 : 0} to{" "}
+          {Math.min(page * limit, total)} of {total} vehicles
         </div>
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-2">
-            <p className="text-sm font-medium">Rows per page</p>
-            <Select value={limit.toString()} onValueChange={handleLimitChange}>
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue placeholder={limit.toString()} />
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="rows-per-page" className="text-sm font-medium">
+              Rows per page
+            </Label>
+            <Select
+              value={`${limit}`}
+              onValueChange={(value) => {
+                onLimitChange(Number(value));
+              }}
+            >
+              <SelectTrigger id="rows-per-page" className="w-20">
+                <SelectValue placeholder={limit} />
               </SelectTrigger>
               <SelectContent side="top">
                 {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={pageSize.toString()}>
+                  <SelectItem key={pageSize} value={`${pageSize}`}>
                     {pageSize}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
+              className="hidden size-8 p-0 lg:flex"
               onClick={() => onPageChange(1)}
-              disabled={page === 1}
+              disabled={page <= 1}
             >
-              First
+              <span className="sr-only">Go to first page</span>
+              <IconChevronsLeft className="size-4" />
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              className="size-8 p-0"
               onClick={() => onPageChange(page - 1)}
-              disabled={page === 1}
+              disabled={page <= 1}
             >
-              Previous
+              <span className="sr-only">Go to previous page</span>
+              <IconChevronLeft className="size-4" />
             </Button>
             <div className="text-sm font-medium">
               Page {page} of {totalPages}
             </div>
             <Button
               variant="outline"
-              size="sm"
+              className="size-8 p-0"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
             >
-              Next
+              <span className="sr-only">Go to next page</span>
+              <IconChevronRight className="size-4" />
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              className="hidden size-8 p-0 lg:flex"
               onClick={() => onPageChange(totalPages)}
               disabled={page >= totalPages}
             >
-              Last
+              <span className="sr-only">Go to last page</span>
+              <IconChevronsRight className="size-4" />
             </Button>
           </div>
         </div>

@@ -7,20 +7,16 @@ import {
   mapUserToApiUser,
 } from "../types/user";
 
-
-// Response type for getUsers
-interface GetUsersResponse {
-  users: ApiUser[];
-}
-
 // Get all users
 export async function getUsers(): Promise<User[]> {
-  const data = await makeApiCall<GetUsersResponse>(
+  // Backend returns array directly, not wrapped in an object
+  const data = await makeApiCall<ApiUser[]>(
     () => apiClient.get(`${API_BASE_URL}/auth/users`),
     "Failed to fetch users"
   );
 
-  return data.users.map(mapApiUserToUser);
+  // Map API response to frontend format
+  return data.map(mapApiUserToUser);
 }
 
 // Create a new user
@@ -38,6 +34,7 @@ export async function createUser(userData: UserFormData): Promise<User> {
     "Failed to create user"
   );
 
+  // Map API response to frontend format
   return mapApiUserToUser(data);
 }
 
@@ -57,6 +54,7 @@ export async function updateUser(
     "Failed to update user"
   );
 
+  // Map API response to frontend format
   return mapApiUserToUser(data);
 }
 

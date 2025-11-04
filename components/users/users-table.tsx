@@ -12,7 +12,12 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreHorizontal, ArrowUpDown, CheckCircle2, XCircle } from "lucide-react";
+import {
+  MoreHorizontal,
+  ArrowUpDown,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +40,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 import { User, UserRole } from "@/lib/types/user";
+import { IconSearch } from "@tabler/icons-react";
 
 interface UsersTableProps {
   users: User[];
@@ -72,8 +78,11 @@ const getRoleDisplayName = (role: UserRole) => {
 
 export function UsersTable({ users, onEdit, onToggleActive }: UsersTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
 
   const columns: ColumnDef<User>[] = [
     {
@@ -89,7 +98,9 @@ export function UsersTable({ users, onEdit, onToggleActive }: UsersTableProps) {
           </Button>
         );
       },
-      cell: ({ row }) => <div className="font-medium">{row.getValue("email")}</div>,
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("email")}</div>
+      ),
     },
     {
       accessorKey: "name",
@@ -187,18 +198,25 @@ export function UsersTable({ users, onEdit, onToggleActive }: UsersTableProps) {
   });
 
   return (
-    <div className="w-full">
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter by email..."
-          value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("email")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 items-center space-x-2">
+          <div className="relative flex-1 max-w-sm">
+            <IconSearch className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter by email..."
+              value={
+                (table.getColumn("email")?.getFilterValue() as string) ?? ""
+              }
+              onChange={(event) =>
+                table.getColumn("email")?.setFilterValue(event.target.value)
+              }
+              className="pl-8"
+            />
+          </div>
+        </div>
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-lg border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -250,7 +268,8 @@ export function UsersTable({ users, onEdit, onToggleActive }: UsersTableProps) {
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          Showing {table.getFilteredRowModel().rows.length} of {users.length} user(s)
+          Showing {table.getFilteredRowModel().rows.length} of {users.length}{" "}
+          user(s)
         </div>
       </div>
     </div>

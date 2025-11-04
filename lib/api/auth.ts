@@ -143,24 +143,6 @@ export async function logoutUser(refreshToken: string, token: string): Promise<v
 }
 
 /**
- * Verify token validity
- */
-// export async function verifyToken(token: string): Promise<boolean> {
-//   try {
-//     const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-//       method: 'GET',
-//       headers: {
-//         'Authorization': `Bearer ${token}`,
-//       },
-//     });
-
-//     return response.ok;
-//   } catch (error) {
-//     return false;
-//   }
-// }
-
-/**
  * Refresh access token using refresh token
  * Note: The refresh endpoint doesn't require Authorization header according to backend
  */

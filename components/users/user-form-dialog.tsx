@@ -65,14 +65,15 @@ export function UserFormDialog({
   useEffect(() => {
     if (open) {
       if (user) {
+        // When editing, don't include the active field
         form.reset({
           email: user.email,
           password: "", // Never pre-fill password
           name: user.name,
           role: user.role,
-          active: user.active,
         });
       } else {
+        // When creating, include all fields
         form.reset({
           email: "",
           password: "",
@@ -85,7 +86,9 @@ export function UserFormDialog({
   }, [open, user, form]);
 
   const handleSubmit = async (data: UserFormData) => {
-    await onSubmit(data);
+    // Remove the active field when in edit mode
+    const submitData = isEditMode ? { ...data, active: undefined } : data;
+    await onSubmit(submitData);
     form.reset();
   };
 
@@ -93,7 +96,9 @@ export function UserFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? "Edit User" : "Create New User"}</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? "Edit User" : "Create New User"}
+          </DialogTitle>
           <DialogDescription>
             {isEditMode
               ? "Update the user information below."
@@ -102,7 +107,10 @@ export function UserFormDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             {/* Email */}
             <FormField
               control={form.control}
@@ -122,8 +130,7 @@ export function UserFormDialog({
                 </FormItem>
               )}
             />
-
-            {/* Password - Only show in create mode or as optional in edit mode */}
+            {/* Password - Only show in create mode */}
             {!isEditMode && (
               <FormField
                 control={form.control}
@@ -144,7 +151,6 @@ export function UserFormDialog({
                 )}
               />
             )}
-
             {/* Name */}
             <FormField
               control={form.control}
@@ -163,7 +169,6 @@ export function UserFormDialog({
                 </FormItem>
               )}
             />
-
             {/* Role */}
             <FormField
               control={form.control}
@@ -184,7 +189,9 @@ export function UserFormDialog({
                     </FormControl>
                     <SelectContent>
                       <SelectItem value={UserRole.DRIVER}>Driver</SelectItem>
-                      <SelectItem value={UserRole.DISPATCHER}>Dispatcher</SelectItem>
+                      <SelectItem value={UserRole.DISPATCHER}>
+                        Dispatcher
+                      </SelectItem>
                       <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
                     </SelectContent>
                   </Select>
@@ -192,30 +199,30 @@ export function UserFormDialog({
                 </FormItem>
               )}
             />
-
-            {/* Active Status */}
-            <FormField
-              control={form.control}
-              name="active"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={isLoading}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Active</FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      User can log in and access the system
-                    </p>
-                  </div>
-                </FormItem>
-              )}
-            />
-
+            {/* Active Status - Only show in create mode */}
+            {!isEditMode && (
+              <FormField
+                control={form.control}
+                name="active"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Active</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        User can log in and access the system
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            )}
             {/* Form Actions */}
             <div className="flex justify-end gap-3 pt-4">
               <Button
