@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -13,36 +13,33 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import {
-  IconChevronDown,
+  MoreHorizontal,
+  ArrowUpDown,
+  Play,
+  CheckCircle,
+  XCircle,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import {
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
-  IconDotsVertical,
-  IconEdit,
-  IconLayoutColumns,
   IconSearch,
-  IconTrash,
 } from "@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -51,19 +48,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import {
-  Vehicle,
-  EngineType,
-  getEngineTypeDisplay,
-  getCategoryDisplay,
-} from "@/lib/types/vehicle";
-import { ArrowUpDown, CheckCircle2, XCircle } from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
-interface VehiclesTableProps {
-  vehicles: Vehicle[];
-  onEdit: (vehicle: Vehicle) => void;
-  onDelete: (vehicle: Vehicle) => void;
+import {
+  Route,
+  RouteStatus,
+  MachineryType,
+  formatRouteDate,
+  getStatusDisplayName,
+  getMachineryTypeDisplayName,
+} from "@/lib/types/route";
+
+interface RoutesTableProps {
+  routes: Route[];
+  onEdit: (route: Route) => void;
+  onDelete: (route: Route) => void;
+  onStart: (route: Route) => void;
+  onComplete: (route: Route) => void;
+  onCancel: (route: Route) => void;
   page: number;
   limit: number;
   total: number;
@@ -72,189 +81,230 @@ interface VehiclesTableProps {
   onLimitChange: (limit: number) => void;
 }
 
-export function VehiclesTable({
-  vehicles,
+// Status badge colors
+const getStatusBadgeClass = (status: RouteStatus) => {
+  switch (status) {
+    case RouteStatus.PLANNED:
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+    case RouteStatus.IN_PROGRESS:
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+    case RouteStatus.COMPLETED:
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+    case RouteStatus.CANCELLED:
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+    default:
+      return "";
+  }
+};
+
+// Machinery type badge colors
+const getMachineryBadgeVariant = (type: MachineryType) => {
+  switch (type) {
+    case MachineryType.LIGHT:
+      return "secondary";
+    case MachineryType.HEAVY:
+      return "default";
+    default:
+      return "outline";
+  }
+};
+
+export function RoutesTable({
+  routes,
   onEdit,
   onDelete,
+  onStart,
+  onComplete,
+  onCancel,
   page,
   limit,
   total,
   totalPages,
   onPageChange,
   onLimitChange,
-}: VehiclesTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    averageConsumption: false,
-    engineDisplacement: false,
-    tankCapacity: false,
-  });
+}: RoutesTableProps) {
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
 
-  const columns: ColumnDef<Vehicle>[] = [
+  const columns: ColumnDef<Route>[] = [
     {
-      accessorKey: "plate",
-      header: "Plate",
-      cell: ({ row }) => (
-        <div className="font-medium uppercase">{row.getValue("plate")}</div>
-      ),
-      enableHiding: false,
-    },
-    {
-      accessorKey: "brand",
+      accessorKey: "code",
       header: ({ column }) => {
         return (
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Brand
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => <div>{row.getValue("brand")}</div>,
-    },
-    {
-      accessorKey: "model",
-      header: "Model",
-      cell: ({ row }) => <div>{row.getValue("model")}</div>,
-    },
-    {
-      accessorKey: "year",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Year
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => <div>{row.getValue("year") || "-"}</div>,
-    },
-    {
-      accessorKey: "mileage",
-      header: "Mileage",
-      cell: ({ row }) => <div>{row.getValue("mileage") || "-"}</div>,
-    },
-    {
-      accessorKey: "averageConsumption",
-      header: "Avg. Consumption",
-      cell: ({ row }) => <div>{row.getValue("averageConsumption") || "-"}</div>,
-    },
-    {
-      accessorKey: "engineDisplacement",
-      header: "Engine Capacity",
-      cell: ({ row }) => <div>{row.getValue("engineDisplacement") || "-"}</div>,
-    },
-    {
-      accessorKey: "tankCapacity",
-      header: "Tank Capacity",
-      cell: ({ row }) => <div>{row.getValue("tankCapacity") || "-"}</div>,
-    },
-    {
-      accessorKey: "engineType",
-      header: "Engine Type",
-      cell: ({ row }) => {
-        const engineType = row.getValue("engineType") as EngineType;
-        const getEngineColor = (type: EngineType) => {
-          switch (type) {
-            case EngineType.ELECTRIC:
-              return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-            case EngineType.HYBRID:
-              return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-            case EngineType.DIESEL:
-              return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-            case EngineType.GASOLINE:
-              return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-            default:
-              return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-          }
-        };
-
-        return (
-          <Badge
-            variant="outline"
-            className={`${getEngineColor(engineType)} border-none`}
-          >
-            {getEngineTypeDisplay(engineType)}
-          </Badge>
-        );
-      },
-      filterFn: (row, id, value) => {
-        return value.includes(row.getValue(id));
-      },
-    },
-    {
-      accessorKey: "category",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Category
+            Code
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
       },
       cell: ({ row }) => (
-        <Badge variant="outline">
-          {getCategoryDisplay(row.getValue("category"))}
-        </Badge>
+        <div className="font-mono text-sm">{row.getValue("code")}</div>
       ),
     },
     {
-      accessorKey: "available",
-      header: "Status",
+      id: "route",
+      header: "Route",
       cell: ({ row }) => {
-        const available = row.getValue("available") as boolean;
+        const route = row.original;
         return (
-          <div className="flex items-center gap-2">
-            {available ? (
-              <>
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span className="text-green-600">Available</span>
-              </>
-            ) : (
-              <>
-                <XCircle className="h-4 w-4 text-red-600" />
-                <span className="text-red-600">Unavailable</span>
-              </>
-            )}
+          <div className="flex flex-col">
+            <span className="text-sm font-medium truncate max-w-[200px]">
+              {route.origin}
+            </span>
+            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+              → {route.destination}
+            </span>
           </div>
         );
       },
     },
     {
-      id: "actions",
+      accessorKey: "distanceKm",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Distance
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => {
-        const vehicle = row.original;
+        const distance = row.getValue("distanceKm") as number;
+        return <div>{distance.toFixed(1)} km</div>;
+      },
+    },
+    {
+      accessorKey: "machineryType",
+      header: "Type",
+      cell: ({ row }) => {
+        const type = row.getValue("machineryType") as MachineryType;
+        return (
+          <Badge variant={getMachineryBadgeVariant(type) as any}>
+            {getMachineryTypeDisplayName(type)}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "driver",
+      header: "Driver",
+      cell: ({ row }) => {
+        const route = row.original;
+        return <div className="text-sm">{route.driver.name}</div>;
+      },
+    },
+    {
+      id: "vehicle",
+      header: "Vehicle",
+      cell: ({ row }) => {
+        const route = row.original;
+        return <div className="font-mono text-sm">{route.vehicle.plate}</div>;
+      },
+    },
+    {
+      accessorKey: "scheduledAt",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Scheduled
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const date = row.getValue("scheduledAt") as string;
+        return <div className="text-sm">{formatRouteDate(date)}</div>;
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("status") as RouteStatus;
+        return (
+          <Badge className={getStatusBadgeClass(status)} variant="outline">
+            {getStatusDisplayName(status)}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const route = row.original;
+        const canEdit = route.status === RouteStatus.PLANNED;
+        const canStart = route.status === RouteStatus.PLANNED;
+        const canComplete = route.status === RouteStatus.IN_PROGRESS;
+        const canCancel =
+          route.status === RouteStatus.PLANNED ||
+          route.status === RouteStatus.IN_PROGRESS;
+        const canDelete =
+          route.status === RouteStatus.PLANNED ||
+          route.status === RouteStatus.CANCELLED;
 
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="size-8 p-0">
+              <Button variant="ghost" className="h-8 w-8 p-0">
                 <span className="sr-only">Open menu</span>
-                <IconDotsVertical className="size-4" />
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(vehicle)}>
-                <IconEdit className="mr-2 size-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => onDelete(vehicle)}
-                className="text-destructive focus:text-destructive"
-              >
-                <IconTrash className="mr-2 size-4" />
-                Delete
-              </DropdownMenuItem>
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              {canEdit && (
+                <DropdownMenuItem onClick={() => onEdit(route)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit route
+                </DropdownMenuItem>
+              )}
+              {canStart && (
+                <DropdownMenuItem onClick={() => onStart(route)}>
+                  <Play className="mr-2 h-4 w-4" />
+                  Start route
+                </DropdownMenuItem>
+              )}
+              {canComplete && (
+                <DropdownMenuItem onClick={() => onComplete(route)}>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Complete route
+                </DropdownMenuItem>
+              )}
+              {canCancel && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onCancel(route)}>
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancel route
+                  </DropdownMenuItem>
+                </>
+              )}
+              {canDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDelete(route)}
+                    className="text-red-600"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete route
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -263,76 +313,45 @@ export function VehiclesTable({
   ];
 
   const table = useReactTable({
-    data: vehicles,
+    data: routes,
     columns,
-    state: {
-      sorting,
-      columnVisibility,
-      columnFilters,
-    },
-    pageCount: totalPages,
-    manualPagination: true,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
   });
+
+  const handleLimitChange = (newLimit: string) => {
+    onLimitChange(Number(newLimit));
+    onPageChange(1);
+  };
 
   return (
     <div className="space-y-4">
-      {/* Filters and Controls */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 items-center space-x-2">
           <div className="relative flex-1 max-w-sm">
             <IconSearch className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search by plate, brand, or model..."
+              placeholder="Filter by code..."
               value={
-                (table.getColumn("plate")?.getFilterValue() as string) ?? ""
+                (table.getColumn("code")?.getFilterValue() as string) ?? ""
               }
-              onChange={(event) => {
-                const value = event.target.value;
-                table.getColumn("plate")?.setFilterValue(value);
-                table.getColumn("brand")?.setFilterValue(value);
-                table.getColumn("model")?.setFilterValue(value);
-              }}
+              onChange={(event) =>
+                table.getColumn("code")?.setFilterValue(event.target.value)
+              }
               className="pl-8"
             />
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <IconLayoutColumns className="mr-2 size-4" />
-              Columns
-              <IconChevronDown className="ml-2 size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize -tracking-wider"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
-
-      {/* Table */}
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
@@ -376,31 +395,25 @@ export function VehiclesTable({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No vehicles found.
+                  No routes found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-
       {/* Pagination */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-muted-foreground">
           Showing {total > 0 ? (page - 1) * limit + 1 : 0} to{" "}
-          {Math.min(page * limit, total)} of {total} vehicles
+          {Math.min(page * limit, total)} of {total} routes
         </div>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <Label htmlFor="rows-per-page" className="text-sm font-medium">
               Rows per page
             </Label>
-            <Select
-              value={`${limit}`}
-              onValueChange={(value) => {
-                onLimitChange(Number(value));
-              }}
-            >
+            <Select value={`${limit}`} onValueChange={handleLimitChange}>
               <SelectTrigger id="rows-per-page" className="w-20">
                 <SelectValue placeholder={limit} />
               </SelectTrigger>
