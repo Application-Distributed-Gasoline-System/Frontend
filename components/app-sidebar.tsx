@@ -1,31 +1,20 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
-  // IconCamera,
-  // IconChartBar,
   IconDashboard,
-  // IconDatabase,
-  // IconFileAi,
-  // IconFileDescription,
-  // IconFileWord,
-  // IconFolder,
-  // IconHelp,
   IconInnerShadowTop,
-  // IconListDetails,
-  // IconReport,
   IconSearch,
   IconSettings,
   IconUsers,
   IconCar,
   IconRoute2,
-  IconSteeringWheel
-} from "@tabler/icons-react"
+  IconSteeringWheel,
+} from "@tabler/icons-react";
 
-// import { NavDocuments } from "@/components/nav-documents"
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -34,7 +23,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 const data = {
   navMain: [
@@ -55,7 +44,7 @@ const data = {
     },
     {
       title: "Routes",
-      url: "#",
+      url: "/dashboard/routes",
       icon: IconRoute2,
     },
     {
@@ -76,24 +65,7 @@ const data = {
       icon: IconSearch,
     },
   ],
-  // documents: [
-  //   {
-  //     name: "Data Library",
-  //     url: "#",
-  //     icon: IconDatabase,
-  //   },
-  //   {
-  //     name: "Reports",
-  //     url: "#",
-  //     icon: IconReport,
-  //   },
-  //   {
-  //     name: "Word Assistant",
-  //     url: "#",
-  //     icon: IconFileWord,
-  //   },
-  // ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -115,12 +87,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* <NavDocuments items={data.documents} /> */}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
