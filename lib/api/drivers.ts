@@ -74,7 +74,7 @@ export async function updateDriver(
     updatePayload.phone = driverData.phone;
   }
   if (driverData.birthDate !== undefined && driverData.birthDate !== "") {
-    updatePayload.birthDate = driverData.birthDate;
+    updatePayload.birthDate = new Date(driverData.birthDate).toISOString();
   }
 
   const data = await makeApiCall<ApiDriver>(

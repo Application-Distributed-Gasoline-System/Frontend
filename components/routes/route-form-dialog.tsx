@@ -83,6 +83,7 @@ export function RouteFormDialog({
       originLon: undefined,
       destinationLat: undefined,
       destinationLon: undefined,
+      scheduledAt: "",
     },
   });
 

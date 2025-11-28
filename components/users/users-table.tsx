@@ -52,13 +52,13 @@ interface UsersTableProps {
 const getRoleBadgeVariant = (role: UserRole) => {
   switch (role) {
     case UserRole.ADMIN:
-      return "destructive";
-    case UserRole.DISPATCHER:
       return "default";
-    case UserRole.DRIVER:
-      return "secondary";
-    default:
+    case UserRole.DISPATCHER:
       return "outline";
+    case UserRole.DRIVER:
+      return "destructive";
+    default:
+      return "secondary";
   }
 };
 
@@ -119,7 +119,17 @@ export function UsersTable({ users, onEdit, onToggleActive }: UsersTableProps) {
     },
     {
       accessorKey: "role",
-      header: "Role",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Role
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => {
         const role = row.getValue("role") as UserRole;
         return (

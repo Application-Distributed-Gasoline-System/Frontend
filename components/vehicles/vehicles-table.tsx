@@ -58,6 +58,7 @@ import {
   getEngineTypeDisplay,
   getCategoryDisplay,
 } from "@/lib/types/vehicle";
+import { ArrowUpDown, CheckCircle2, XCircle } from "lucide-react";
 
 interface VehiclesTableProps {
   vehicles: Vehicle[];
@@ -101,7 +102,17 @@ export function VehiclesTable({
     },
     {
       accessorKey: "brand",
-      header: "Brand",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Brand
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => <div>{row.getValue("brand")}</div>,
     },
     {
@@ -111,7 +122,17 @@ export function VehiclesTable({
     },
     {
       accessorKey: "year",
-      header: "Year",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Year
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => <div>{row.getValue("year") || "-"}</div>,
     },
     {
@@ -169,7 +190,17 @@ export function VehiclesTable({
     },
     {
       accessorKey: "category",
-      header: "Category",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Category
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => (
         <Badge variant="outline">
           {getCategoryDisplay(row.getValue("category"))}
@@ -182,16 +213,19 @@ export function VehiclesTable({
       cell: ({ row }) => {
         const available = row.getValue("available") as boolean;
         return (
-          <Badge
-            variant={available ? "default" : "secondary"}
-            className={
-              available
-                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-none"
-                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-none"
-            }
-          >
-            {available ? "Available" : "Unavailable"}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {available ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <span className="text-green-600">Available</span>
+              </>
+            ) : (
+              <>
+                <XCircle className="h-4 w-4 text-red-600" />
+                <span className="text-red-600">Unavailable</span>
+              </>
+            )}
+          </div>
         );
       },
     },

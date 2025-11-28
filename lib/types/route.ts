@@ -178,11 +178,12 @@ export function mapApiRouteToRoute(apiRoute: ApiRoute): Route {
 
 // Mapping function: Form data to API request
 export function mapRouteFormToApi(formData: RouteFormData): CreateRouteRequest {
-  let scheduledAtFormatted = undefined;
-  if (formData.scheduledAt) {
-    const date = new Date(formData.scheduledAt);
-    scheduledAtFormatted = date.toISOString();
-  }
+  const scheduledAtFormatted = formData.scheduledAt === ""
+    ? new Date().toISOString()
+    : formData.scheduledAt
+      ? new Date(formData.scheduledAt).toISOString()
+      : undefined;
+
   return {
     origin: formData.origin,
     destination: formData.destination,

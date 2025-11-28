@@ -10,6 +10,7 @@ import {
   IconCar,
   IconRoute2,
   IconSteeringWheel,
+  IconGasStation,
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -46,6 +47,11 @@ const data = {
       title: "Routes",
       url: "/dashboard/routes",
       icon: IconRoute2,
+    },
+    {
+      title: "Fuel",
+      url: "/dashboard/fuel",
+      icon: IconGasStation,
     },
     {
       title: "Users",

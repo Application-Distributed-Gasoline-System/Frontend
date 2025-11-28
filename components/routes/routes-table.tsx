@@ -167,7 +167,17 @@ export function RoutesTable({
     },
     {
       accessorKey: "distanceKm",
-      header: "Distance",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Distance
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => {
         const distance = row.getValue("distanceKm") as number;
         return <div>{distance.toFixed(1)} km</div>;
@@ -203,7 +213,17 @@ export function RoutesTable({
     },
     {
       accessorKey: "scheduledAt",
-      header: "Scheduled",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Scheduled
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => {
         const date = row.getValue("scheduledAt") as string;
         return <div className="text-sm">{formatRouteDate(date)}</div>;
