@@ -100,14 +100,6 @@ export function DriverFormDialog({
 
         {/* Read-only driver info */}
         <div className="rounded-md border bg-muted/50 p-4 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Driver ID:</span>
-            <span className="font-mono">{driver.id}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">User ID:</span>
-            <span className="font-mono">{driver.userId}</span>
-          </div>
           {driver.email && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Email:</span>

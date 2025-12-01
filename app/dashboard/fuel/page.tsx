@@ -117,8 +117,10 @@ export default function FuelPage() {
 
       <Separator />
 
+      <VehicleFuelHistory />
+
       {/* Tabbed Interface */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      {/* <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="recent-records" className="gap-2">
             <IconChartBar className="h-4 w-4" />
@@ -130,7 +132,6 @@ export default function FuelPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab 1: Recent Records */}
         <TabsContent value="recent-records" className="space-y-4">
           <div className="rounded-lg border p-4">
             <div className="mb-4 flex items-center justify-between">
@@ -150,11 +151,10 @@ export default function FuelPage() {
           </div>
         </TabsContent>
 
-        {/* Tab 2: Vehicle History */}
         <TabsContent value="vehicle-history" className="space-y-4">
           <VehicleFuelHistory />
         </TabsContent>
-      </Tabs>
+      </Tabs> */}
 
       {/* Fuel Form Dialog */}
       <FuelFormDialog

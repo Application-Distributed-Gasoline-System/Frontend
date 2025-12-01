@@ -204,7 +204,8 @@ export function VehicleFuelHistory() {
                   <p className="text-sm text-yellow-700 dark:text-yellow-300">
                     {fuelHistory.anomaliesDetected} anomal
                     {fuelHistory.anomaliesDetected === 1 ? "y" : "ies"} detected
-                    in this period ({fuelHistory.records.length || "N/A"} total records)
+                    in this period ({fuelHistory.records.length || "N/A"} total
+                    records)
                   </p>
                   {fuelHistory.anomalyRecords.length > 0 && (
                     <div className="space-y-2">
@@ -227,9 +228,7 @@ export function VehicleFuelHistory() {
                               {anomaly.deltaPercent > 0 ? "+" : ""}
                               {anomaly.deltaPercent.toFixed(1)}%
                             </Badge>
-                            <span>
-                              {anomaly.liters.toFixed(2)} L consumed
-                            </span>
+                            <span>{anomaly.liters.toFixed(2)} L consumed</span>
                           </li>
                         ))}
                       </ul>
@@ -247,17 +246,19 @@ export function VehicleFuelHistory() {
                 <CardTitle>
                   Fuel History for {fuelHistory.vehicle.plate}
                 </CardTitle>
-                <Badge variant="outline">
-                  {fuelHistory.records.length} record
-                  {fuelHistory.records.length === 1 ? "" : "s"}
-                </Badge>
+                {!fuelHistory.records ? null : (
+                  <Badge variant="outline">
+                    {fuelHistory.records.length} record
+                    {fuelHistory.records.length === 1 ? "" : "s"}
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
                 {fuelHistory.vehicle.brand} {fuelHistory.vehicle.model}
               </p>
             </CardHeader>
             <CardContent>
-              {fuelHistory.records.length > 0 ? (
+              {fuelHistory.records ? (
                 <FuelRecordsTable
                   records={fuelHistory.records}
                   isLoading={false}
