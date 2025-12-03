@@ -8,6 +8,7 @@ export interface StoredUser {
   email: string;
   name: string;
   role: 'ADMIN' | 'DRIVER' | 'DISPATCHER';
+  driverId?: string;
 }
 
 /**

@@ -192,7 +192,7 @@ export function mapRouteFormToApi(formData: RouteFormData): CreateRouteRequest {
     driverId: formData.driverId,
     vehicleId: formData.vehicleId,
     scheduledAt: scheduledAtFormatted,
-    estimatedFuelL: Number(formData.estimatedFuelL?.toFixed(2) || 0),
+    estimatedFuelL: Number(formData.estimatedFuelL?.toFixed(2)) || undefined,
   };
 }
 

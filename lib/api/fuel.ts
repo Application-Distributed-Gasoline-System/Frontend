@@ -6,6 +6,7 @@ import {
   FuelFormData,
   CreateFuelRequest,
   mapFuelFormToApi,
+  DriverFuelHistory,
 } from "@/lib/types/fuel";
 
 /**
@@ -43,6 +44,30 @@ export async function getVehicleFuelHistory(
   }`;
 
   return makeApiCall<VehicleFuelHistory>(
+    () => apiClient.get(url),
+    "Failed to fetch vehicle fuel history"
+  );
+}
+
+/**
+ * Get driver fuel records with optional date filters
+ * GET /fuel/driver/:id?from=&to=
+ */
+export async function getDriverFuelHistory(
+  driverId: string,
+  from?: string,
+  to?: string
+): Promise<DriverFuelHistory> {
+  const params = new URLSearchParams();
+  if (from) params.append("from", from);
+  if (to) params.append("to", to);
+
+  const queryString = params.toString();
+  const url = `${API_BASE_URL}/fuel/driver/${driverId}${
+    queryString ? `?${queryString}` : ""
+  }`;
+
+  return makeApiCall<DriverFuelHistory>(
     () => apiClient.get(url),
     "Failed to fetch vehicle fuel history"
   );

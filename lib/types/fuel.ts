@@ -54,6 +54,18 @@ export interface VehicleFuelHistory {
   }>;
 }
 
+// Vehicle fuel history response
+export interface DriverFuelHistory {
+  driverId: string;
+  records: FuelRecord[];
+  anomaliesDetected: number;
+  anomalyRecords: Array<{
+    recordId: string;
+    deltaPercent: number;
+    liters: number;
+  }>;
+}
+
 // Fuel report item
 export interface FuelReportItem {
   vehicle: {

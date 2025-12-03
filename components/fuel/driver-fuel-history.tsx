@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { IconCar, IconAlertTriangle } from "@tabler/icons-react";
+import { IconUser, IconAlertTriangle } from "@tabler/icons-react";
 
 import {
   Select,
@@ -20,21 +20,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { FuelRecordsTable } from "./fuel-records-table";
 
-import type { Vehicle } from "@/lib/types/vehicle";
-import type { VehicleFuelHistory } from "@/lib/types/fuel";
-import { getVehicles } from "@/lib/api/vehicles";
-import { getVehicleFuelHistory, getDefaultDateRange } from "@/lib/api/fuel";
-import { useAuth } from "@/contexts/auth-context";
+import type { Driver } from "@/lib/types/driver";
+import type { DriverFuelHistory } from "@/lib/types/fuel";
+import { getDrivers } from "@/lib/api/drivers";
+import { getDriverFuelHistory, getDefaultDateRange } from "@/lib/api/fuel";
 
-export function VehicleFuelHistory() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(
+interface DriverFuelHistoryProps {
+  autoFilterUserId?: string; // If provided, hide driver selector and auto-filter
+}
+
+export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) {
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(
+    autoFilterUserId || null
+  );
+  const [fuelHistory, setFuelHistory] = useState<DriverFuelHistory | null>(
     null
   );
-  const [fuelHistory, setFuelHistory] = useState<VehicleFuelHistory | null>(
-    null
-  );
-  const [loadingVehicles, setLoadingVehicles] = useState(true);
+  const [loadingDrivers, setLoadingDrivers] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Date range state
@@ -42,18 +45,23 @@ export function VehicleFuelHistory() {
   const [fromDate, setFromDate] = useState(defaultFrom);
   const [toDate, setToDate] = useState(defaultTo);
 
-  // Fetch vehicles on mount
+  // Auto-fetch if autoFilterUserId provided, otherwise fetch drivers list
   useEffect(() => {
-    fetchVehicles();
-  }, []);
+    if (autoFilterUserId) {
+      setLoadingDrivers(false);
+      fetchHistory();
+    } else {
+      fetchDrivers();
+    }
+  }, [autoFilterUserId]);
 
-  const fetchVehicles = async () => {
+  const fetchDrivers = async () => {
     try {
-      setLoadingVehicles(true);
-      const response = await getVehicles(1, 100);
-      setVehicles(response.vehicles);
+      setLoadingDrivers(true);
+      const response = await getDrivers(1, 100);
+      setDrivers(response.drivers);
     } catch (error: unknown) {
-      let errorMessage = "Failed to fetch vehicles";
+      let errorMessage = "Failed to fetch drivers";
       if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === "string") {
@@ -61,20 +69,20 @@ export function VehicleFuelHistory() {
       }
       toast.error(errorMessage);
     } finally {
-      setLoadingVehicles(false);
+      setLoadingDrivers(false);
     }
   };
 
   const fetchHistory = async () => {
-    if (!selectedVehicleId) {
-      toast.error("Please select a vehicle");
+    if (!selectedDriverId) {
+      toast.error("Please select a driver");
       return;
     }
 
     try {
       setLoadingHistory(true);
-      const history = await getVehicleFuelHistory(
-        selectedVehicleId,
+      const history = await getDriverFuelHistory(
+        selectedDriverId,
         fromDate,
         toDate
       );
@@ -92,8 +100,8 @@ export function VehicleFuelHistory() {
     }
   };
 
-  const handleVehicleChange = (vehicleId: string) => {
-    setSelectedVehicleId(parseInt(vehicleId));
+  const handleDriverChange = (driverId: string) => {
+    setSelectedDriverId(driverId);
     setFuelHistory(null);
   };
 
@@ -105,41 +113,48 @@ export function VehicleFuelHistory() {
     fetchHistory();
   };
 
+  // Get selected driver info for display
+  const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
+
   return (
     <div className="space-y-6">
-      {/* Vehicle and Date Range Selectors */}
+      {/* Driver and Date Range Selectors */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <IconCar className="h-5 w-5" />
-            Select Vehicle and Date Range
+            <IconUser className="h-5 w-5" />
+            {autoFilterUserId
+              ? "Your Fuel Records"
+              : "Select Driver and Date Range"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Vehicle Selector */}
-          <div className="space-y-2">
-            <Label htmlFor="vehicle-select">Vehicle</Label>
-            <Select
-              onValueChange={handleVehicleChange}
-              value={selectedVehicleId?.toString() || ""}
-              disabled={loadingVehicles}
-            >
-              <SelectTrigger id="vehicle-select">
-                <SelectValue
-                  placeholder={
-                    loadingVehicles ? "Loading..." : "Select a vehicle"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {vehicles.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
-                    {vehicle.plate} - {vehicle.brand} {vehicle.model}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Driver Selector - Only show if NOT auto-filtered */}
+          {!autoFilterUserId && (
+            <div className="space-y-2">
+              <Label htmlFor="driver-select">Driver</Label>
+              <Select
+                onValueChange={handleDriverChange}
+                value={selectedDriverId || ""}
+                disabled={loadingDrivers}
+              >
+                <SelectTrigger id="driver-select">
+                  <SelectValue
+                    placeholder={
+                      loadingDrivers ? "Loading..." : "Select a driver"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {drivers.map((driver) => (
+                    <SelectItem key={driver.id} value={driver.id}>
+                      {driver.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Date Range Filters */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -164,7 +179,7 @@ export function VehicleFuelHistory() {
             <div className="flex items-end">
               <Button
                 onClick={handleApplyFilters}
-                disabled={!selectedVehicleId || loadingHistory}
+                disabled={!selectedDriverId || loadingHistory}
                 className="w-full"
               >
                 {loadingHistory ? "Loading..." : "Apply Filters"}
@@ -175,12 +190,12 @@ export function VehicleFuelHistory() {
       </Card>
 
       {/* Results */}
-      {!selectedVehicleId ? (
+      {!autoFilterUserId && !selectedDriverId ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <IconCar className="h-12 w-12 text-muted-foreground mb-4" />
+            <IconUser className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-center">
-              Select a vehicle to view its fuel history
+              Select a driver to view their fuel history
             </p>
           </CardContent>
         </Card>
@@ -205,8 +220,7 @@ export function VehicleFuelHistory() {
                   <p className="text-sm text-yellow-700 dark:text-yellow-300">
                     {fuelHistory.anomaliesDetected} anomal
                     {fuelHistory.anomaliesDetected === 1 ? "y" : "ies"} detected
-                    in this period ({fuelHistory.records.length || "N/A"} total
-                    records)
+                    in this period ({fuelHistory.records.length} total records)
                   </p>
                   {fuelHistory.anomalyRecords.length > 0 && (
                     <div className="space-y-2">
@@ -245,34 +259,31 @@ export function VehicleFuelHistory() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>
-                  Fuel History for {fuelHistory.vehicle.plate}
+                  {autoFilterUserId
+                    ? "Your Fuel History"
+                    : `Fuel History for ${selectedDriver?.name || fuelHistory.driverId}`}
                 </CardTitle>
-                {!fuelHistory.records ? null : (
-                  <Badge variant="outline">
-                    {fuelHistory.records.length} record
-                    {fuelHistory.records.length === 1 ? "" : "s"}
-                  </Badge>
-                )}
+                <Badge variant="outline">
+                  {fuelHistory.records.length} record
+                  {fuelHistory.records.length === 1 ? "" : "s"}
+                </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {fuelHistory.vehicle.brand} {fuelHistory.vehicle.model}
-              </p>
             </CardHeader>
             <CardContent>
-              {fuelHistory.records ? (
+              {fuelHistory.records.length > 0 ? (
                 <FuelRecordsTable
                   records={fuelHistory.records}
                   isLoading={false}
-                  showVehicleColumn={false}
+                  showVehicleColumn={true} // Show vehicle column for driver view
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <p className="text-muted-foreground">
-                    No fuel records found for this vehicle in the selected date
+                    No fuel records found for this driver in the selected date
                     range.
                   </p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Try adjusting the date range or select a different vehicle.
+                    Try adjusting the date range or select a different driver.
                   </p>
                 </div>
               )}

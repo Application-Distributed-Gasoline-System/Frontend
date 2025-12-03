@@ -65,6 +65,7 @@ import {
   getStatusDisplayName,
   getMachineryTypeDisplayName,
 } from "@/lib/types/route";
+import { useAuth } from "@/contexts/auth-context";
 
 interface RoutesTableProps {
   routes: Route[];
@@ -123,6 +124,7 @@ export function RoutesTable({
   onPageChange,
   onLimitChange,
 }: RoutesTableProps) {
+  const { user } = useAuth();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -246,15 +248,17 @@ export function RoutesTable({
       enableHiding: false,
       cell: ({ row }) => {
         const route = row.original;
-        const canEdit = route.status === RouteStatus.PLANNED;
+        const canEdit =
+          route.status === RouteStatus.PLANNED && user?.role !== "DRIVER";
         const canStart = route.status === RouteStatus.PLANNED;
         const canComplete = route.status === RouteStatus.IN_PROGRESS;
         const canCancel =
           route.status === RouteStatus.PLANNED ||
           route.status === RouteStatus.IN_PROGRESS;
         const canDelete =
-          route.status === RouteStatus.PLANNED ||
-          route.status === RouteStatus.CANCELLED;
+          (route.status === RouteStatus.PLANNED ||
+            route.status === RouteStatus.CANCELLED) &&
+          user?.role !== "DRIVER";
 
         return (
           <DropdownMenu>

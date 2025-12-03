@@ -26,21 +26,16 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
         return;
       }
 
-      // Check role requirement if specified
       if (requiredRole && user?.role !== requiredRole) {
-        // Redirect to unauthorized page or dashboard
-        if (user?.role === 'ADMIN') {
+        if (user?.role === 'ADMIN' || user?.role === 'DISPATCHER') {
           router.push('/dashboard');
         } else if (user?.role === 'DRIVER') {
-          router.push('/driver');
-        } else {
-          router.push('/dashboard');
+          router.push('/routes');
         }
       }
     }
   }, [isAuthenticated, isLoading, user, requiredRole, router]);
 
-  // Show loading state while checking authentication
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">

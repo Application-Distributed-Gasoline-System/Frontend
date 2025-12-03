@@ -41,7 +41,7 @@ import {
 } from "@/lib/types/route";
 import { Driver } from "@/lib/types/driver";
 import { Vehicle } from "@/lib/types/vehicle";
-import { getDriverById, getDrivers } from "@/lib/api/drivers";
+import { getDrivers } from "@/lib/api/drivers";
 import { getVehicles } from "@/lib/api/vehicles";
 import { osrmApi } from "@/lib/api/osrm";
 
@@ -93,21 +93,18 @@ export function RouteFormDialog({
   });
 
   useEffect(() => {
-    if (machineryType) {
+    if (machineryType && !route) {
       fetchDrivers(machineryType);
       fetchVehicles(machineryType);
 
       form.setValue("driverId", "");
       form.setValue("vehicleId", 0);
     }
-  }, [machineryType]);
+  }, [machineryType, route]);
 
   // Fetch drivers and vehicles when dialog opens
   useEffect(() => {
     if (open) {
-      fetchDrivers(MachineryType.LIGHT);
-      fetchVehicles(MachineryType.LIGHT);
-
       if (route) {
         // Edit mode: populate form with route data
         let scheduledAtFormatted = "";
@@ -120,22 +117,32 @@ export function RouteFormDialog({
           }
         }
 
+        // Primero resetea con los datos de la ruta
         form.reset({
           origin: route.origin,
           destination: route.destination,
-          distanceKm: route.distanceKm,
+          distanceKm: Number(route.distanceKm.toFixed(2)),
           machineryType: route.machineryType,
           driverId: route.driver.id,
           vehicleId: route.vehicle.id,
           scheduledAt: scheduledAtFormatted,
-          estimatedFuelL: route.estimatedFuelL,
+          estimatedFuelL: route.estimatedFuelL
+            ? Number(route.estimatedFuelL.toFixed(2))
+            : undefined,
           originLat: undefined,
           originLon: undefined,
           destinationLat: undefined,
           destinationLon: undefined,
         });
+
+        // Luego carga TODOS los conductores y vehículos del tipo correcto
+        // pero sin filtrar para que aparezca el asignado
+        fetchDriversForEdit(route.machineryType, route.driver.id);
+        fetchVehiclesForEdit(route.machineryType, route.vehicle.id);
       } else {
-        // Create mode: reset form
+        // Modo creación - comportamiento normal
+        fetchDrivers(MachineryType.LIGHT);
+        fetchVehicles(MachineryType.LIGHT);
         form.reset({
           origin: "",
           destination: "",
@@ -154,11 +161,67 @@ export function RouteFormDialog({
     }
   }, [open, route, form]);
 
+  // Agrega estas funciones nuevas:
+  const fetchDriversForEdit = async (
+    type: MachineryType,
+    currentDriverId: string
+  ) => {
+    try {
+      setLoadingDrivers(true);
+      const response = await getDrivers(1, 100);
+
+      // En modo edición, mostramos todos los conductores del tipo correcto
+      // incluyendo el que ya está asignado
+      if (type === MachineryType.HEAVY) {
+        const heavyDrivers = response.drivers.filter(
+          (d) => d.license !== "C" && d.license
+        );
+        setDrivers(heavyDrivers);
+      } else if (type === MachineryType.LIGHT) {
+        const lightDrivers = response.drivers.filter(
+          (d) => d.license === "C" && d.license
+        );
+        setDrivers(lightDrivers);
+      }
+    } catch (error) {
+      console.error("Failed to fetch drivers:", error);
+    } finally {
+      setLoadingDrivers(false);
+    }
+  };
+
+  const fetchVehiclesForEdit = async (
+    type: MachineryType,
+    currentVehicleId: number
+  ) => {
+    try {
+      setLoadingVehicles(true);
+      const response = await getVehicles(1, 100);
+
+      // En modo edición, mostramos todos los vehículos del tipo correcto
+      // incluyendo el que ya está asignado
+      if (type === MachineryType.HEAVY) {
+        const heavyVehicles = response.vehicles.filter(
+          (v) => v.category === MachineryType.HEAVY
+        );
+        setVehicles(heavyVehicles);
+      } else if (type === MachineryType.LIGHT) {
+        const lightVehicles = response.vehicles.filter(
+          (v) => v.category === MachineryType.LIGHT
+        );
+        setVehicles(lightVehicles);
+      }
+    } catch (error) {
+      console.error("Failed to fetch vehicles:", error);
+    } finally {
+      setLoadingVehicles(false);
+    }
+  };
+
   const fetchDrivers = async (type: MachineryType) => {
     try {
       setLoadingDrivers(true);
       const response = await getDrivers(1, 100);
-      // Filter to only available drivers
       if (type === MachineryType.HEAVY) {
         const availableHeavyDrivers = response.drivers.filter(
           (d) => d.isAvailable && d.license !== "C" && d.license
@@ -183,7 +246,6 @@ export function RouteFormDialog({
     try {
       setLoadingVehicles(true);
       const response = await getVehicles(1, 100);
-      // Filter to only available vehicles
       if (type === MachineryType.HEAVY) {
         const availableHeavyVehicles = response.vehicles.filter(
           (v) => v.available && v.category === MachineryType.HEAVY
@@ -292,7 +354,7 @@ export function RouteFormDialog({
               name="origin"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Origin *</FormLabel>
+                  <FormLabel>Origin <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <AddressCombobox
                       value={field.value}
@@ -312,7 +374,7 @@ export function RouteFormDialog({
               name="destination"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Destination *</FormLabel>
+                  <FormLabel>Destination <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
                     <AddressCombobox
                       value={field.value}
@@ -333,7 +395,7 @@ export function RouteFormDialog({
                 name="distanceKm"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Distance (km) *</FormLabel>
+                    <FormLabel>Distance (km) <span className="text-destructive">*</span></FormLabel>
                     <div className="flex gap-2">
                       <FormControl>
                         <Input
@@ -365,7 +427,7 @@ export function RouteFormDialog({
                 name="machineryType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Machinery Type *</FormLabel>
+                    <FormLabel>Machinery Type <span className="text-destructive">*</span></FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
@@ -385,6 +447,9 @@ export function RouteFormDialog({
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormDescription>
+                      Type of machinery for the route
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -398,7 +463,7 @@ export function RouteFormDialog({
                 name="driverId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Driver *</FormLabel>
+                    <FormLabel>Driver <span className="text-destructive">*</span></FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
@@ -431,7 +496,7 @@ export function RouteFormDialog({
                 name="vehicleId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vehicle *</FormLabel>
+                    <FormLabel>Vehicle <span className="text-destructive">*</span></FormLabel>
                     <Select
                       onValueChange={(value) => field.onChange(parseInt(value))}
                       value={field.value ? field.value.toString() : ""}
@@ -453,10 +518,16 @@ export function RouteFormDialog({
                             value={vehicle.id.toString()}
                           >
                             {vehicle.plate} - {vehicle.brand} {vehicle.model}
+                            {!vehicle.available && " (Not Available)"}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {/* <FormDescription>
+                      {isEditMode
+                        ? "Current vehicle shown even if not available"
+                        : "Only available vehicles shown"}
+                    </FormDescription> */}
                     <FormMessage />
                   </FormItem>
                 )}

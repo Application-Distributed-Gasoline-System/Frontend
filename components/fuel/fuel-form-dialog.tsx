@@ -161,7 +161,9 @@ export function FuelFormDialog({
               name="driverId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Driver *</FormLabel>
+                  <FormLabel>
+                    Driver <span className="text-destructive">*</span>
+                  </FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
@@ -195,7 +197,9 @@ export function FuelFormDialog({
               name="vehicleId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Vehicle *</FormLabel>
+                  <FormLabel>
+                    Vehicle <span className="text-destructive">*</span>
+                  </FormLabel>
                   <Select
                     onValueChange={(value) => field.onChange(parseInt(value))}
                     value={field.value ? field.value.toString() : ""}
@@ -233,7 +237,9 @@ export function FuelFormDialog({
                 name="liters"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Liters *</FormLabel>
+                    <FormLabel>
+                      Liters <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -247,6 +253,8 @@ export function FuelFormDialog({
                         disabled={isLoading}
                       />
                     </FormControl>
+                    <FormDescription>Amount of fuel in liters</FormDescription>
+
                     <FormMessage />
                   </FormItem>
                 )}
@@ -276,7 +284,9 @@ export function FuelFormDialog({
                         disabled={isLoading}
                       />
                     </FormControl>
-                    <FormDescription>Optional</FormDescription>
+                    <FormDescription>
+                      Optional. Current odometer in km
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -322,7 +332,7 @@ export function FuelFormDialog({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Optional - Associate with a route. Leave empty for none.
+                    Optional. Leave empty for none.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

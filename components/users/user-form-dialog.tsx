@@ -15,6 +15,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -117,7 +118,9 @@ export function UserFormDialog({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>
+                    Email <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="user@example.com"
@@ -137,7 +140,9 @@ export function UserFormDialog({
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>
+                      Password <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Minimum 8 characters"
@@ -165,6 +170,9 @@ export function UserFormDialog({
                       disabled={isLoading}
                     />
                   </FormControl>
+                  <FormDescription>
+                    Optional. Full name of the user
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

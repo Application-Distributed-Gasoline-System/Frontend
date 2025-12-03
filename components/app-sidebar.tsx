@@ -25,9 +25,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/contexts/auth-context";
 
 const data = {
-  navMain: [
+  navAdmin: [
     {
       title: "Dashboard",
       url: "/dashboard",
@@ -59,6 +60,35 @@ const data = {
       icon: IconUsers,
     },
   ],
+  navDispatcher: [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: IconDashboard,
+    },
+    {
+      title: "Routes",
+      url: "/dashboard/routes",
+      icon: IconRoute2,
+    },
+    {
+      title: "Fuel",
+      url: "/dashboard/fuel",
+      icon: IconGasStation,
+    },
+  ],
+  navDriver: [
+    {
+      title: "Routes",
+      url: "/dashboard/routes",
+      icon: IconRoute2,
+    },
+    {
+      title: "Fuel",
+      url: "/dashboard/fuel",
+      icon: IconGasStation,
+    },
+  ],
   navSecondary: [
     {
       title: "Settings",
@@ -74,6 +104,11 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuth();
+
+  if (!user) {
+    return null;
+  }
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -92,7 +127,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        {user.role === "ADMIN" && <NavMain items={data.navAdmin} />}
+        {user.role === "DISPATCHER" && <NavMain items={data.navDispatcher} />}
+        {user.role === "DRIVER" && <NavMain items={data.navDriver} />}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

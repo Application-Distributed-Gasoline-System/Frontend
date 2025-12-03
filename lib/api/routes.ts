@@ -36,7 +36,34 @@ export async function getRoutes(
   );
 
   return {
-    routes: data.routes.map(mapApiRouteToRoute),
+    routes: data.routes ? data.routes.map(mapApiRouteToRoute) : [],
+    total: data.total,
+    page: data.page,
+    totalPages: data.totalPages,
+  };
+}
+
+export async function getRoutesByDriverId(
+  id?: string,
+  page?: number,
+  limit?: number
+): Promise<RoutesResponse> {
+  const params = new URLSearchParams();
+  if (page !== undefined) params.append("page", page.toString());
+  if (limit !== undefined) params.append("limit", limit.toString());
+
+  const queryString = params.toString();
+  const url = queryString
+    ? `${API_BASE_URL}/routes/driver/${id}?${queryString}`
+    : `${API_BASE_URL}/routes/driver/${id}`;
+
+  const data = await makeApiCall<ApiRoutesResponse>(
+    () => apiClient.get(url),
+    "Failed to fetch routes"
+  );
+
+  return {
+    routes: data.routes ? data.routes.map(mapApiRouteToRoute) : [],
     total: data.total,
     page: data.page,
     totalPages: data.totalPages,

@@ -31,7 +31,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { Driver, DriverFormData, driverFormSchema, License } from "@/lib/types/driver";
+import {
+  Driver,
+  DriverFormData,
+  driverFormSchema,
+  License,
+} from "@/lib/types/driver";
 
 interface DriverFormDialogProps {
   driver: Driver | null;
@@ -109,14 +114,19 @@ export function DriverFormDialog({
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             {/* Name */}
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>
+                    Name <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Driver name"
@@ -135,7 +145,9 @@ export function DriverFormDialog({
               name="license"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>License Type</FormLabel>
+                  <FormLabel>
+                    License Type <span className="text-destructive">*</span>
+                  </FormLabel>
                   <Select
                     onValueChange={(value) => {
                       field.onChange(value === "none" ? null : value);
@@ -194,15 +206,9 @@ export function DriverFormDialog({
                 <FormItem>
                   <FormLabel>Birth Date</FormLabel>
                   <FormControl>
-                    <Input
-                      type="date"
-                      {...field}
-                      disabled={isLoading}
-                    />
+                    <Input type="date" {...field} disabled={isLoading} />
                   </FormControl>
-                  <FormDescription>
-                    Optional date of birth
-                  </FormDescription>
+                  <FormDescription>Optional date of birth</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

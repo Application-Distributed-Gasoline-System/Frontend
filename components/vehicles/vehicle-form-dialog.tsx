@@ -139,7 +139,9 @@ export function VehicleFormDialog({
                 name="plate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Plate Number *</FormLabel>
+                    <FormLabel>
+                      Plate Number <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="ABC-123"
@@ -162,7 +164,9 @@ export function VehicleFormDialog({
                 name="brand"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Brand *</FormLabel>
+                    <FormLabel>
+                      Brand <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Toyota, Ford, Tesla..."
@@ -181,7 +185,9 @@ export function VehicleFormDialog({
                 name="model"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Model *</FormLabel>
+                    <FormLabel>
+                      Model <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Camry, F-150, Model 3..."
@@ -228,7 +234,9 @@ export function VehicleFormDialog({
                 name="engineType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Engine Type *</FormLabel>
+                    <FormLabel>
+                      Engine Type <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value as unknown as string}
@@ -258,7 +266,9 @@ export function VehicleFormDialog({
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category *</FormLabel>
+                    <FormLabel>
+                      Category <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value as unknown as string}
@@ -285,7 +295,7 @@ export function VehicleFormDialog({
                 control={form.control}
                 name="tankCapacity"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-2">
+                  <FormItem>
                     <FormLabel>Fuel Capacity (gallons)</FormLabel>
                     <FormControl>
                       <Input
@@ -306,6 +316,37 @@ export function VehicleFormDialog({
                     </FormControl>
                     <FormDescription>
                       Optional: Tank capacity in gallons
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Fuel Capacity */}
+              <FormField
+                control={form.control}
+                name="engineDisplacement"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Engine Size (cc)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="10"
+                        placeholder="1500"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined
+                          )
+                        }
+                        value={field.value || ""}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Optional: Engine Capacity in cc
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

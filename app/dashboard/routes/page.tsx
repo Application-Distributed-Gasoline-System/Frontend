@@ -29,8 +29,10 @@ import {
   startRoute,
   completeRoute,
   cancelRoute,
+  getRoutesByDriverId,
 } from "@/lib/api/routes";
 import { IconRoute2 } from "@tabler/icons-react";
+import { useAuth } from "@/contexts/auth-context";
 
 type StatusAction = "start" | "complete" | "cancel";
 
@@ -57,18 +59,36 @@ export default function RoutesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isStatusLoading, setIsStatusLoading] = useState(false);
 
+  const { user } = useAuth();
+
   // Fetch routes when page or limit changes
   useEffect(() => {
-    fetchRoutes();
-  }, [page, limit]);
+    if (user) {
+      fetchRoutes();
+    }
+  }, [page, limit, user]);
 
   const fetchRoutes = async () => {
+    if (!user) {
+      setRoutes([]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const data = await getRoutes(page, limit);
-      setRoutes(data.routes);
-      setTotal(data.total);
-      setTotalPages(data.totalPages);
+
+      if (user.role === "DRIVER") {
+        const data = await getRoutesByDriverId(user.driverId, page, limit);
+        setRoutes(data.routes || []);
+        setTotal(data.total);
+        setTotalPages(data.totalPages);
+      } else {
+        const data = await getRoutes(page, limit);
+        setRoutes(data.routes || []);
+        setTotal(data.total);
+        setTotalPages(data.totalPages);
+      }
     } catch (error: unknown) {
       let errorMessage = "Failed to fetch routes";
       if (error instanceof Error) {
@@ -228,6 +248,8 @@ export default function RoutesPage() {
     setPage(1); // Reset to first page when limit changes
   };
 
+  const canCreateRoutes = user?.role !== "DRIVER";
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <div className="flex items-center justify-between">
@@ -250,10 +272,12 @@ export default function RoutesPage() {
             Manage delivery routes and track their status
           </p>
         </div>
-        <Button onClick={handleAddRoute}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Route
-        </Button>
+        {canCreateRoutes && (
+          <Button onClick={handleAddRoute}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Route
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -269,12 +293,17 @@ export default function RoutesPage() {
           </div>
           <h3 className="mt-4 text-lg font-semibold">No routes found</h3>
           <p className="mb-4 mt-2 text-sm text-muted-foreground">
-            Get started by creating your first route
+            {user?.role === "DRIVER"
+              ? "You don't have any assigned routes yet"
+              : "Get started by creating your first route"}
           </p>
-          <Button onClick={handleAddRoute}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Route
-          </Button>
+
+          {canCreateRoutes && (
+            <Button onClick={handleAddRoute}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Route
+            </Button>
+          )}
         </div>
       ) : (
         <RoutesTable
