@@ -1,11 +1,19 @@
 // Centralized HTTP client with automatic token refresh and retry logic
 import { getToken, getRefreshToken, setToken, setRefreshToken, clearAuth } from '@/lib/auth/storage';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 export interface ApiError {
   message: string;
   statusCode?: number;
+  originalError?: any;
+}
+
+export interface BackendError {
+  message: string;
+  statusCode?: number;
+  error?: string;
+  [key: string]: any;
 }
 
 export interface RetryConfig {
@@ -28,8 +36,8 @@ let refreshPromise: Promise<string> | null = null;
 // Default retry configuration
 const DEFAULT_RETRY_CONFIG: Required<RetryConfig> = {
   maxRetries: 3,
-  retryDelay: 1000, // 1 second
-  retryableStatuses: [408, 429, 500, 502, 503, 504], // Request Timeout, Too Many Requests, Server Errors
+  retryDelay: 1000,
+  retryableStatuses: [408, 429, 500, 502, 503, 504],
   shouldRetry: () => true,
 };
 
@@ -56,13 +64,40 @@ function isRetryableError(error: unknown, statusCode?: number, config?: RetryCon
 }
 
 /**
- * Calculate exponential backoff delay
+ * Calculate exponential backoff delay with jitter
  */
 function getRetryDelay(attempt: number, baseDelay: number): number {
-  // Exponential backoff: baseDelay * 2^attempt with jitter
   const exponentialDelay = baseDelay * Math.pow(2, attempt);
-  const jitter = Math.random() * 0.3 * exponentialDelay; // Add up to 30% jitter
+  const jitter = Math.random() * 0.3 * exponentialDelay;
   return exponentialDelay + jitter;
+}
+
+/**
+ * Extract clean error message from gRPC error format
+ * Example: "9 FAILED_PRECONDITION: Driver already has a route" → "Driver already has a route"
+ */
+function extractGrpcErrorMessage(message: string): string {
+  // gRPC pattern: number + space + ERROR_NAME + ": " + message
+  const grpcPattern = /^\d+\s+\w+:\s*(.+)$/;
+  const match = message.match(grpcPattern);
+
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  // If not gRPC pattern, try to extract after last colon if it makes sense
+  if (message.includes(':')) {
+    const parts = message.split(':');
+    // Take the last non-empty part after trimming
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const trimmed = parts[i].trim();
+      if (trimmed.length > 5) { // Avoid very short messages
+        return trimmed;
+      }
+    }
+  }
+
+  return message;
 }
 
 /**
@@ -70,7 +105,6 @@ function getRetryDelay(attempt: number, baseDelay: number): number {
  */
 async function refreshAccessToken(): Promise<string> {
   if (isRefreshing && refreshPromise) {
-    // If already refreshing, return the existing promise
     return refreshPromise;
   }
 
@@ -97,14 +131,12 @@ async function refreshAccessToken(): Promise<string> {
       }
 
       const data: RefreshTokenResponse = await response.json();
-      
-      // Store new tokens
+
       setToken(data.accessToken);
       setRefreshToken(data.refreshToken);
-      
+
       return data.accessToken;
     } catch (error) {
-      // If refresh fails, clear auth and throw error
       clearAuth();
       throw error;
     } finally {
@@ -126,14 +158,11 @@ async function apiRequest(
   const { skipAuth = false, retryConfig, ...fetchOptions } = options;
   const config = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
 
-  // Prepare headers using the Headers API so we can call .set safely
   const headers = new Headers(fetchOptions.headers);
-  // Ensure Content-Type is set to application/json if not already present
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
-  // Add auth token if not skipping auth
   if (!skipAuth) {
     const token = getToken();
     if (token) {
@@ -144,16 +173,13 @@ async function apiRequest(
   let lastError: Error | null = null;
   let lastResponse: Response | null = null;
 
-  // Retry loop
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
-      // Add delay for retries (not on first attempt)
       if (attempt > 0) {
         const retryDelay = getRetryDelay(attempt - 1, config.retryDelay);
         await delay(retryDelay);
       }
 
-      // Make the request
       let response = await fetch(url, {
         ...fetchOptions,
         headers,
@@ -161,14 +187,13 @@ async function apiRequest(
 
       lastResponse = response;
 
-      // If we get a 401 and we're not skipping auth, try to refresh the token
+      // Handle 401 Unauthorized with token refresh
       if (response.status === 401 && !skipAuth) {
         try {
-          // Refresh the token
           const newToken = await refreshAccessToken();
-          // Retry the request with the new token
           const retryHeaders = new Headers(headers);
           retryHeaders.set('Authorization', `Bearer ${newToken}`);
+
           response = await fetch(url, {
             ...fetchOptions,
             headers: retryHeaders,
@@ -176,10 +201,8 @@ async function apiRequest(
 
           lastResponse = response;
         } catch (refreshError) {
-          // If refresh fails, redirect to login will be handled by auth context
           console.error('Token refresh failed:', refreshError);
 
-          // Emit a custom event that the auth context can listen to
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('auth:token-refresh-failed'));
           }
@@ -188,8 +211,10 @@ async function apiRequest(
         }
       }
 
-      // If the response is successful or it's a client error (4xx) that's not retryable, return it
-      if (response.ok || (response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429)) {
+      // Return successful responses or non-retryable client errors
+      if (response.ok ||
+        (response.status >= 400 && response.status < 500 &&
+          response.status !== 408 && response.status !== 429)) {
         return response;
       }
 
@@ -198,45 +223,37 @@ async function apiRequest(
         return response;
       }
 
-      // Check custom retry logic
       if (config.shouldRetry && !config.shouldRetry(new Error(`HTTP ${response.status}`), attempt)) {
         return response;
       }
 
-      // If this is not the last attempt, continue to retry
       if (attempt < config.maxRetries) {
         console.warn(`Request failed with status ${response.status}, retrying... (attempt ${attempt + 1}/${config.maxRetries})`);
         continue;
       }
 
-      // Last attempt failed, return the response
       return response;
 
     } catch (error) {
       lastError = error as Error;
 
-      // Check if we should retry this error
       if (!isRetryableError(error, 0, retryConfig)) {
         throw error;
       }
 
-      // Check custom retry logic
       if (config.shouldRetry && !config.shouldRetry(lastError, attempt)) {
         throw error;
       }
 
-      // If this is not the last attempt, continue to retry
       if (attempt < config.maxRetries) {
         console.warn(`Request failed with network error, retrying... (attempt ${attempt + 1}/${config.maxRetries})`, error);
         continue;
       }
 
-      // Last attempt failed, throw the error
       throw error;
     }
   }
 
-  // This should never be reached, but TypeScript needs a return statement
   if (lastResponse) {
     return lastResponse;
   }
@@ -285,7 +302,7 @@ export const apiClient = {
  */
 export function handleApiError(response: Response, defaultMessage: string): never {
   throw {
-    message: defaultMessage,
+    message: extractGrpcErrorMessage(defaultMessage),
     statusCode: response.status,
   } as ApiError;
 }
@@ -295,27 +312,49 @@ export function handleApiError(response: Response, defaultMessage: string): neve
  */
 export async function makeApiCall<T>(
   apiCall: () => Promise<Response>,
-  errorMessage: string
+  defaultErrorMessage: string
 ): Promise<T> {
   try {
     const response = await apiCall();
-    
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: errorMessage }));
+      let errorData: BackendError;
+
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = {
+          message: defaultErrorMessage,
+          statusText: response.statusText
+        };
+      }
+
+      // Extract and clean the error message
+      const rawMessage = errorData.message || errorData.error || response.statusText || defaultErrorMessage;
+      const cleanMessage = extractGrpcErrorMessage(rawMessage);
+
       throw {
-        message: errorData.message || errorMessage,
+        message: cleanMessage,
         statusCode: response.status,
+        originalError: errorData
       } as ApiError;
     }
 
     return await response.json();
   } catch (error) {
-    if ((error as ApiError).statusCode) {
+    // If it's already an ApiError (with statusCode), re-throw it
+    if ((error as ApiError).statusCode !== undefined) {
       throw error;
     }
+
+    // For other errors, extract clean message
+    const errorMessageText = error instanceof Error ? error.message : String(error);
+    const cleanMessage = extractGrpcErrorMessage(errorMessageText) || defaultErrorMessage;
+
     throw {
-      message: 'Network error. Please check your connection.',
+      message: cleanMessage,
       statusCode: 0,
+      originalError: error
     } as ApiError;
   }
 }

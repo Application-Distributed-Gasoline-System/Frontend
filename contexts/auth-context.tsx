@@ -8,7 +8,12 @@ import {
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { loginUser, logoutUser, refreshAccessToken, type AuthResponse } from "@/lib/api/auth";
+import {
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  type AuthResponse,
+} from "@/lib/api/auth";
 import {
   getToken,
   setToken,
@@ -64,18 +69,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Listen for token refresh failures from the API client
   useEffect(() => {
     const handleTokenRefreshFailed = () => {
-      // Clear auth state and redirect to login
       clearAuth();
       setTokenState(null);
       setRefreshTokenState(null);
       setUserState(null);
-      router.push('/login');
+      router.push("/login");
     };
 
-    window.addEventListener('auth:token-refresh-failed', handleTokenRefreshFailed);
+    window.addEventListener(
+      "auth:token-refresh-failed",
+      handleTokenRefreshFailed
+    );
 
     return () => {
-      window.removeEventListener('auth:token-refresh-failed', handleTokenRefreshFailed);
+      window.removeEventListener(
+        "auth:token-refresh-failed",
+        handleTokenRefreshFailed
+      );
     };
   }, [router]);
 
@@ -97,7 +107,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserState(response.user);
 
       // Redirect to dashboard
-      router.push("/dashboard");
+      if (response.user.role === "DRIVER") {
+        router.push("/dashboard/routes");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: unknown) {
       let errorMessage = "Login failed. Please try again.";
       if (err instanceof Error) {
@@ -117,16 +131,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const currentRefreshToken = getRefreshToken();
       const currentToken = getToken();
       if (!currentRefreshToken) {
-        throw new Error('No refresh token available');
+        throw new Error("No refresh token available");
       }
 
       if (!currentToken) {
-        throw new Error('No token available');
+        throw new Error("No token available");
       }
 
-      const response: AuthResponse = await refreshAccessToken(currentRefreshToken, currentToken);
-      
-      // Update tokens in storage
+      const response: AuthResponse = await refreshAccessToken(
+        currentRefreshToken,
+        currentToken
+      );
+
+      // Update tokens and user data in storage
       setToken(response.accessToken);
       setRefreshToken(response.refreshToken);
       setUser(response.user);
@@ -138,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return true;
     } catch (err) {
-      console.error('Token refresh failed:', err);
+      console.error("Token refresh failed:", err);
       // Clear auth state
       clearAuth();
       setTokenState(null);

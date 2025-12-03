@@ -28,8 +28,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -38,23 +38,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
 import { Driver, License, formatDate } from "@/lib/types/driver";
-import {
-  IconChevronLeft,
-  IconChevronRight,
-  IconChevronsLeft,
-  IconChevronsRight,
-  IconSearch,
-} from "@tabler/icons-react";
+import { IconSearch, IconDownload } from "@tabler/icons-react";
+import { exportToCSV } from "@/lib/utils/export";
 
 interface DriversTableProps {
   drivers: Driver[];
@@ -228,9 +216,19 @@ export function DriversTable({
     },
   });
 
-  const handleLimitChange = (newLimit: string) => {
-    onLimitChange(Number(newLimit));
-    onPageChange(1); // Reset to first page when limit changes
+  const handleExport = () => {
+    exportToCSV(
+      drivers,
+      `drivers-${new Date().toISOString().split("T")[0]}`,
+      [
+        { key: "name", label: "Name" },
+        { key: "email", label: "Email" },
+        { key: "phone", label: "Phone" },
+        { key: "licenseNumber", label: "License Number" },
+        { key: "licenseType", label: "License Type" },
+        { key: "available", label: "Available" },
+      ]
+    );
   };
 
   return (
@@ -251,6 +249,10 @@ export function DriversTable({
             />
           </div>
         </div>
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <IconDownload className="mr-2 h-4 w-4" />
+          Export
+        </Button>
       </div>
       <div className="rounded-lg border">
         <Table>
@@ -303,77 +305,15 @@ export function DriversTable({
         </Table>
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing {total > 0 ? (page - 1) * limit + 1 : 0} to{" "}
-          {Math.min(page * limit, total)} of {total} vehicles
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="rows-per-page" className="text-sm font-medium">
-              Rows per page
-            </Label>
-            <Select
-              value={`${limit}`}
-              onValueChange={(value) => {
-                onLimitChange(Number(value));
-              }}
-            >
-              <SelectTrigger id="rows-per-page" className="w-20">
-                <SelectValue placeholder={limit} />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="hidden size-8 p-0 lg:flex"
-              onClick={() => onPageChange(1)}
-              disabled={page <= 1}
-            >
-              <span className="sr-only">Go to first page</span>
-              <IconChevronsLeft className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="size-8 p-0"
-              onClick={() => onPageChange(page - 1)}
-              disabled={page <= 1}
-            >
-              <span className="sr-only">Go to previous page</span>
-              <IconChevronLeft className="size-4" />
-            </Button>
-            <div className="text-sm font-medium">
-              Page {page} of {totalPages}
-            </div>
-            <Button
-              variant="outline"
-              className="size-8 p-0"
-              onClick={() => onPageChange(page + 1)}
-              disabled={page >= totalPages}
-            >
-              <span className="sr-only">Go to next page</span>
-              <IconChevronRight className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="hidden size-8 p-0 lg:flex"
-              onClick={() => onPageChange(totalPages)}
-              disabled={page >= totalPages}
-            >
-              <span className="sr-only">Go to last page</span>
-              <IconChevronsRight className="size-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DataTablePagination
+        page={page}
+        limit={limit}
+        total={total}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+        onLimitChange={onLimitChange}
+        entityName="drivers"
+      />
     </div>
   );
 }

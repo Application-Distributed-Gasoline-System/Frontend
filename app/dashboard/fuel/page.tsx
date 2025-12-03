@@ -2,12 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import {
-  IconPlus,
-  IconGasStation,
-  IconChartBar,
-  IconHistory,
-} from "@tabler/icons-react";
+import { IconPlus, IconCar, IconUser } from "@tabler/icons-react";
 
 import {
   Breadcrumb,
@@ -24,13 +19,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FuelFormDialog } from "@/components/fuel/fuel-form-dialog";
 import { FuelRecordsTable } from "@/components/fuel/fuel-records-table";
 import { VehicleFuelHistory } from "@/components/fuel/vehicle-fuel-history";
+import { DriverFuelHistory } from "@/components/fuel/driver-fuel-history";
 
 import type { FuelRecord, FuelFormData } from "@/lib/types/fuel";
 import { createFuelRecord } from "@/lib/api/fuel";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function FuelPage() {
+  // Auth context
+  const { user } = useAuth();
+
   // State management
-  const [activeTab, setActiveTab] = useState("recent-records");
+  const [activeTab, setActiveTab] = useState("vehicle-history");
   const [recentRecords, setRecentRecords] = useState<FuelRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -106,18 +106,55 @@ export default function FuelPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Fuel Management</h1>
           <p className="text-muted-foreground">
-            Track fuel consumption and detect anomalies
+            {user?.role === "DRIVER"
+              ? "View your fuel consumption records"
+              : "Track fuel consumption and detect anomalies"}
           </p>
         </div>
-        <Button onClick={handleAddFuel}>
-          <IconPlus className="mr-2 h-4 w-4" />
-          Add Fuel Record
-        </Button>
+        {/* Only show Add Fuel Record button for ADMIN/DISPATCHER */}
+        {user?.role !== "DRIVER" && (
+          <Button onClick={handleAddFuel}>
+            <IconPlus className="mr-2 h-4 w-4" />
+            Add Fuel Record
+          </Button>
+        )}
       </div>
 
       <Separator />
 
-      <VehicleFuelHistory />
+      {/* Conditional Content Based on Role */}
+      {user?.role === "DRIVER" ? (
+        /* DRIVER VIEW: No tabs, just their fuel records */
+        <DriverFuelHistory autoFilterUserId={user.driverId} />
+      ) : (
+        /* ADMIN/DISPATCHER VIEW: Tabbed interface */
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-4"
+        >
+          <TabsList>
+            <TabsTrigger value="vehicle-history" className="gap-2">
+              <IconCar className="h-4 w-4" />
+              Vehicle History
+            </TabsTrigger>
+            <TabsTrigger value="driver-history" className="gap-2">
+              <IconUser className="h-4 w-4" />
+              Driver History
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab 1: Vehicle History */}
+          <TabsContent value="vehicle-history" className="space-y-4">
+            <VehicleFuelHistory />
+          </TabsContent>
+
+          {/* Tab 2: Driver History */}
+          <TabsContent value="driver-history" className="space-y-4">
+            <DriverFuelHistory />
+          </TabsContent>
+        </Tabs>
+      )}
 
       {/* Tabbed Interface */}
       {/* <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -156,13 +193,15 @@ export default function FuelPage() {
         </TabsContent>
       </Tabs> */}
 
-      {/* Fuel Form Dialog */}
-      <FuelFormDialog
-        open={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        onSubmit={handleFormSubmit}
-        isLoading={isSubmitting}
-      />
+      {/* Fuel Form Dialog - Only for ADMIN/DISPATCHER */}
+      {user?.role !== "DRIVER" && (
+        <FuelFormDialog
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+          onSubmit={handleFormSubmit}
+          isLoading={isSubmitting}
+        />
+      )}
     </div>
   );
 }

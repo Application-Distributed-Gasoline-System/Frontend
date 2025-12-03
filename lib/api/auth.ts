@@ -15,6 +15,7 @@ export interface ApiAuthResponse {
     high: number;
     unsigned: boolean;
   };
+  driverId?: string
 }
 
 // Decoded JWT payload structure
@@ -33,6 +34,7 @@ export interface AuthResponse {
     email: string;
     name: string;
     role: 'ADMIN' | 'DRIVER' | 'DISPATCHER';
+    driverId?: string
   };
   accessToken: string;
   refreshToken: string;
@@ -105,6 +107,7 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthResp
       email: payload.email,
       name: payload.email.split('@')[0], // Use email prefix as display name
       role: payload.role,
+      driverId: data.driverId
     };
 
     return {
@@ -182,6 +185,7 @@ export async function refreshAccessToken(refreshToken: string, token: string): P
       email: payload.email,
       name: payload.email.split('@')[0], // Use email prefix as display name
       role: payload.role,
+      driverId: data.driverId // AÑADE ESTO
     };
 
     return {
