@@ -224,9 +224,8 @@ export function DriversTable({
         { key: "name", label: "Name" },
         { key: "email", label: "Email" },
         { key: "phone", label: "Phone" },
-        { key: "licenseNumber", label: "License Number" },
-        { key: "licenseType", label: "License Type" },
-        { key: "available", label: "Available" },
+        { key: "license", label: "License Number" },
+        { key: "isAvailable", label: "Available" },
       ]
     );
   };

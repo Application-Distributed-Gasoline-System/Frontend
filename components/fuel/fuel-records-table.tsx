@@ -28,11 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import {
-  FuelRecord,
-  FuelSource,
-  getAnomalyInfo,
-} from "@/lib/types/fuel";
+import { FuelRecord, FuelSource, getAnomalyInfo } from "@/lib/types/fuel";
 
 interface FuelRecordsTableProps {
   records: FuelRecord[];
@@ -80,144 +76,168 @@ export function FuelRecordsTable({
   );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
+  const [searchValue, setSearchValue] = React.useState("");
 
-  const columns: ColumnDef<FuelRecord>[] = [
-    {
-      accessorKey: "recordedAt",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Recorded At
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
+  const columns: ColumnDef<FuelRecord>[] = React.useMemo(() => {
+    const baseColumns: ColumnDef<FuelRecord>[] = [
+      {
+        accessorKey: "recordedAt",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Recorded At
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => {
+          const date = row.getValue("recordedAt") as string;
+          try {
+            return (
+              <div className="text-sm">{new Date(date).toLocaleString()}</div>
+            );
+          } catch {
+            return <div className="text-sm">Invalid date</div>;
+          }
+        },
       },
-      cell: ({ row }) => {
-        const date = row.getValue("recordedAt") as string;
-        try {
+      {
+        id: "driver",
+        accessorKey: "driverId",
+        header: "Driver",
+        cell: ({ row }) => {
+          const record = row.original;
           return (
             <div className="text-sm">
-              {new Date(date).toLocaleString()}
+              {record.driver?.name || record.driverId || "-"}
             </div>
           );
-        } catch {
-          return <div className="text-sm">Invalid date</div>;
-        }
+        },
       },
-    },
-    {
-      id: "driver",
-      header: "Driver",
-      cell: ({ row }) => {
-        const record = row.original;
-        return (
-          <div className="text-sm">
-            {record.driver?.name || record.driverId || "-"}
-          </div>
-        );
+      {
+        id: "route",
+        header: "Route",
+        cell: ({ row }) => {
+          const record = row.original;
+          if (record.routeCode) {
+            return <div className="font-mono text-sm">{record.routeCode}</div>;
+          }
+          return <div className="text-sm text-muted-foreground">-</div>;
+        },
       },
-    },
-    ...(showVehicleColumn
-      ? [
-          {
-            id: "vehicle" as const,
-            header: "Vehicle",
-            cell: ({ row }: { row: { original: FuelRecord } }) => {
-              const record = row.original;
-              if (record.vehicle) {
-                return (
-                  <div className="flex flex-col">
-                    <span className="font-mono text-sm">
-                      {record.vehicle.plate}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {record.vehicle.brand} {record.vehicle.model}
-                    </span>
-                  </div>
-                );
+      {
+        accessorKey: "liters",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
               }
-              return <div className="text-sm">{record.vehicleId || "-"}</div>;
-            },
-          },
-        ]
-      : []),
-    {
-      id: "route",
-      header: "Route",
-      cell: ({ row }) => {
-        const record = row.original;
-        if (record.routeCode) {
-          return <div className="font-mono text-sm">{record.routeCode}</div>;
-        }
-        return <div className="text-sm text-muted-foreground">-</div>;
+            >
+              Liters
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => {
+          const liters = row.getValue("liters") as number | undefined;
+          return (
+            <div className="font-medium">
+              {liters ? liters.toFixed(2) : "0.00"} L
+            </div>
+          );
+        },
       },
-    },
-    {
-      accessorKey: "liters",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Liters
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
+      {
+        accessorKey: "distanceKm",
+        header: "Distance",
+        cell: ({ row }) => {
+          const distance = row.original.distanceKm;
+          return (
+            <div className="text-sm">
+              {distance ? `${distance.toFixed(1)} km` : "-"}
+            </div>
+          );
+        },
       },
-      cell: ({ row }) => {
-        const liters = row.getValue("liters") as number | undefined;
-        return (
-          <div className="font-medium">
-            {liters ? liters.toFixed(2) : "0.00"} L
-          </div>
-        );
+      {
+        id: "efficiency",
+        header: "Efficiency",
+        cell: ({ row }) => {
+          const record = row.original;
+          if (record.liters && record.distanceKm && record.liters > 0) {
+            const efficiency = record.distanceKm / record.liters;
+            return <div className="text-sm">{efficiency.toFixed(1)} km/L</div>;
+          }
+          return <div className="text-sm text-muted-foreground">-</div>;
+        },
       },
-    },
-    {
-      accessorKey: "odometer",
-      header: "Odometer",
-      cell: ({ row }) => {
-        const odometer = row.getValue("odometer") as number | undefined;
-        return (
-          <div className="text-sm">
-            {odometer ? `${odometer.toFixed(1)} km` : "-"}
-          </div>
-        );
+      {
+        accessorKey: "source",
+        header: "Source",
+        cell: ({ row }) => {
+          const source = row.getValue("source") as FuelSource;
+          return (
+            <Badge className={getSourceBadgeClass(source)} variant="outline">
+              {getSourceDisplayName(source)}
+            </Badge>
+          );
+        },
       },
-    },
-    {
-      accessorKey: "source",
-      header: "Source",
-      cell: ({ row }) => {
-        const source = row.getValue("source") as FuelSource;
-        return (
-          <Badge className={getSourceBadgeClass(source)} variant="outline">
-            {getSourceDisplayName(source)}
-          </Badge>
-        );
+      {
+        id: "anomaly",
+        header: "Anomaly",
+        cell: ({ row }) => {
+          const record = row.original;
+          const anomalyInfo = getAnomalyInfo(record);
+          return (
+            <Badge
+              variant={anomalyInfo.variant}
+              className={anomalyInfo.className}
+            >
+              {anomalyInfo.label}
+            </Badge>
+          );
+        },
       },
-    },
-    {
-      id: "anomaly",
-      header: "Anomaly",
-      cell: ({ row }) => {
-        const record = row.original;
-        const anomalyInfo = getAnomalyInfo(record);
-        return (
-          <Badge
-            variant={anomalyInfo.variant}
-            className={anomalyInfo.className}
-          >
-            {anomalyInfo.label}
-          </Badge>
-        );
-      },
-    },
-  ];
+    ];
+
+    // Add vehicle column conditionally
+    if (showVehicleColumn) {
+      const vehicleColumn: ColumnDef<FuelRecord> = {
+        id: "vehicle",
+        accessorKey: "vehicleId",
+        header: "Vehicle",
+        cell: ({ row }) => {
+          const record = row.original;
+          if (record.vehicle) {
+            return (
+              <div className="flex flex-col">
+                <span className="font-mono text-sm">
+                  {record.vehicle.plate}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {record.vehicle.brand} {record.vehicle.model}
+                </span>
+              </div>
+            );
+          }
+          return <div className="text-sm">{record.vehicleId || "-"}</div>;
+        },
+      };
+
+      // Insert vehicle column after driver column
+      baseColumns.splice(2, 0, vehicleColumn);
+    }
+
+    return baseColumns;
+  }, [showVehicleColumn]);
 
   const table = useReactTable({
     data: records,
@@ -235,6 +255,17 @@ export function FuelRecordsTable({
     },
   });
 
+  // Global search handler
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    // Filter by multiple columns
+    table.getColumn("driverId")?.setFilterValue(value);
+    if (showVehicleColumn) {
+      table.getColumn("vehicleId")?.setFilterValue(value);
+    }
+    table.getColumn("routeCode")?.setFilterValue(value);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -251,13 +282,13 @@ export function FuelRecordsTable({
           <div className="relative flex-1 max-w-sm">
             <IconSearch className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
-              placeholder="Filter by vehicle or driver..."
-              value={
-                (table.getColumn("vehicle")?.getFilterValue() as string) ?? ""
+              placeholder={
+                showVehicleColumn
+                  ? "Filter by vehicle, driver, or route..."
+                  : "Filter by driver or route..."
               }
-              onChange={(event) =>
-                table.getColumn("vehicle")?.setFilterValue(event.target.value)
-              }
+              value={searchValue}
+              onChange={(event) => handleSearchChange(event.target.value)}
               className="pl-8"
             />
           </div>

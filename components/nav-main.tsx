@@ -32,7 +32,7 @@ export function NavMain({
             return (
               <SidebarMenuItem key={item.title}>
                 <Link href={item.url} className="w-full">
-                  <SidebarMenuButton tooltip={item.title} isActive={isActive}>
+                  <SidebarMenuButton tooltip={item.title} isActive={isActive} className="cursor-pointer">
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </SidebarMenuButton>

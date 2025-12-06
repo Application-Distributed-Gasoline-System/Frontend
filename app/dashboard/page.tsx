@@ -8,6 +8,7 @@ import {
   IconDroplet,
   IconTruckDelivery,
   IconUsers,
+  IconDownload,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
@@ -27,12 +28,11 @@ import { RouteStatus } from "@/lib/types/route";
 import type { Route } from "@/lib/types/route";
 
 // Dashboard components
-import { FuelTrendChart } from "@/components/dashboard/fuel-trend-chart";
-import { RouteStatusChart } from "@/components/dashboard/route-status-chart";
 import { AnomalyAlerts } from "@/components/dashboard/anomaly-alerts";
 import { TopConsumers } from "@/components/dashboard/top-consumers";
 import { ActiveRoutesWidget } from "@/components/dashboard/active-routes-widget";
 import { FleetHealthCards } from "@/components/dashboard/fleet-health-cards";
+import { EfficiencyScatterChart } from "@/components/dashboard/efficiency-scatter-chart";
 
 export default function DashboardPage() {
   const [fuelReport, setFuelReport] = useState<FuelReportItem[]>([]);
@@ -123,6 +123,40 @@ export default function DashboardPage() {
     fetchFuelReport();
   };
 
+  const handleExportDashboard = async () => {
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { DashboardPDF } = await import("@/lib/pdf/dashboard-pdf");
+
+      const blob = await pdf(
+        <DashboardPDF
+          fuelReport={fuelReport}
+          dateRange={{ from: fromDate, to: toDate }}
+          metrics={{
+            totalFuelConsumed,
+            avgConsumption,
+            totalAnomalies,
+            potentialFuelLoss,
+            anomalyRate,
+            fleetAvailability,
+          }}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `fuel-analytics-${fromDate}-to-${toDate}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast.success("PDF exported successfully");
+    } catch (error) {
+      console.error("Failed to export PDF:", error);
+      toast.error("Failed to export PDF");
+    }
+  };
+
   // Calculate fuel statistics
   const totalFuelConsumed = fuelReport.reduce(
     (sum, item) => sum + item.totalLiters,
@@ -142,8 +176,19 @@ export default function DashboardPage() {
     0
   );
 
+  // Calculate potential fuel loss from anomalies
+  const potentialFuelLoss = fuelReport.reduce((total, item) => {
+    if (!item.anomalyRecords) return total;
+    const itemLoss = item.anomalyRecords.reduce((acc, record) => {
+      const loss = record.liters - record.estimatedFuelL;
+      return acc + (loss > 0 ? loss : 0); // Only count excess consumption
+    }, 0);
+    return total + itemLoss;
+  }, 0);
+
   // Calculate fleet health metrics
-  const anomalyRate = totalRecords > 0 ? (totalAnomalies / totalRecords) * 100 : 0;
+  const anomalyRate =
+    totalRecords > 0 ? (totalAnomalies / totalRecords) * 100 : 0;
   const fleetAvailability =
     totalVehicles > 0 ? (availableVehicles / totalVehicles) * 100 : 0;
   const completedRoutes = allRoutes.filter(
@@ -165,14 +210,14 @@ export default function DashboardPage() {
       {/* Main Content */}
       <div className="flex flex-col gap-6">
         {/* Quick Stats - First Row */}
-        {isLoadingStats ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
+        {isLoadingStats || isLoadingFuel ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-28 w-full" />
             ))}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -197,7 +242,9 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{activeDrivers}</div>
-                <p className="text-xs text-muted-foreground">Total registered</p>
+                <p className="text-xs text-muted-foreground">
+                  Total registered
+                </p>
               </CardContent>
             </Card>
 
@@ -213,17 +260,55 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">In progress</p>
               </CardContent>
             </Card>
-          </div>
-        )}
 
-        {/* Fleet Health Metrics */}
-        {!isLoadingStats && !isLoadingFuel && (
-          <div className="grid gap-4 md:grid-cols-3">
-            <FleetHealthCards
-              anomalyRate={anomalyRate}
-              fleetAvailability={fleetAvailability}
-              routeCompletionRate={routeCompletionRate}
-            />
+            <Card
+              className={
+                potentialFuelLoss > 0
+                  ? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950"
+                  : ""
+              }
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle
+                  className={`text-sm font-medium ${
+                    potentialFuelLoss > 0
+                      ? "text-red-600 dark:text-red-400"
+                      : ""
+                  }`}
+                >
+                  Potential Fuel Loss
+                </CardTitle>
+                <IconAlertTriangle
+                  className={`h-4 w-4 ${
+                    potentialFuelLoss > 0
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-muted-foreground"
+                  }`}
+                />
+              </CardHeader>
+              <CardContent>
+                <div
+                  className={`text-2xl font-bold ${
+                    potentialFuelLoss > 0
+                      ? "text-red-700 dark:text-red-300"
+                      : ""
+                  }`}
+                >
+                  {potentialFuelLoss.toFixed(1)} L
+                </div>
+                <p
+                  className={`text-xs ${
+                    potentialFuelLoss > 0
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {potentialFuelLoss > 0
+                    ? "Excess consumption detected"
+                    : "No excess detected"}
+                </p>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -237,9 +322,19 @@ export default function DashboardPage() {
                 Fuel Analytics
               </h2>
               <p className="text-sm text-muted-foreground">
-                Fuel consumption and performance metrics
+                Filter fuel consumption data by date range
               </p>
             </div>
+            {!isLoadingFuel && fuelReport.length > 0 && (
+              <Button
+                onClick={handleExportDashboard}
+                variant="outline"
+                disabled={isLoadingFuel}
+              >
+                <IconDownload className="mr-2 h-4 w-4" />
+                Export to PDF
+              </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
@@ -273,146 +368,183 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Fuel Metrics Cards */}
-        {isLoadingFuel ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-32 w-full" />
-            ))}
+        {/* ROW 2: OPERATIONS VIEW - What's happening now? */}
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">
+              Operations View
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Current fleet status and active operations
+            </p>
           </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Fuel Consumed
-                </CardTitle>
-                <IconDroplet className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {totalFuelConsumed.toFixed(2)}L
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  In selected period
-                </p>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Avg Consumption
-                </CardTitle>
-                <IconGasStation className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {avgConsumption.toFixed(2)}
-                </div>
-                <p className="text-xs text-muted-foreground">Liters per km</p>
-              </CardContent>
-            </Card>
-
-            <Card
-              className={
-                totalAnomalies > 0
-                  ? "border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950"
-                  : ""
-              }
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle
-                  className={`text-sm font-medium ${
-                    totalAnomalies > 0
-                      ? "text-yellow-600 dark:text-yellow-400"
-                      : ""
-                  }`}
-                >
-                  Anomalies Detected
-                </CardTitle>
-                <IconAlertTriangle
-                  className={`h-4 w-4 ${
-                    totalAnomalies > 0
-                      ? "text-yellow-600 dark:text-yellow-400"
-                      : "text-muted-foreground"
-                  }`}
+          {isLoadingStats || isLoadingFuel ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Skeleton className="h-[400px] w-full" />
+              <Skeleton className="h-[300px] w-full" />
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              <ActiveRoutesWidget routes={activeRoutes} />
+              <div className="grid gap-4">
+                <FleetHealthCards
+                  anomalyRate={anomalyRate}
+                  fleetAvailability={fleetAvailability}
+                  routeCompletionRate={routeCompletionRate}
                 />
-              </CardHeader>
-              <CardContent>
-                <div
-                  className={`text-2xl font-bold ${
-                    totalAnomalies > 0
-                      ? "text-yellow-700 dark:text-yellow-300"
-                      : ""
-                  }`}
-                >
-                  {totalAnomalies}
-                </div>
-                <p
-                  className={`text-xs ${
-                    totalAnomalies > 0
-                      ? "text-yellow-600 dark:text-yellow-400"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {totalAnomalies > 0
-                    ? "Requires attention"
-                    : "No anomalies found"}
-                </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          )}
+        </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Records
-                </CardTitle>
-                <IconFileDescription className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalRecords}</div>
-                <p className="text-xs text-muted-foreground">
-                  Fuel records logged
-                </p>
-              </CardContent>
-            </Card>
+        {/* ROW 3: ANALYSIS VIEW - How are we performing? */}
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">
+              Performance Analysis
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Fuel consumption metrics and top consumers
+            </p>
           </div>
-        )}
 
-        {/* Anomaly Alerts */}
-        {!isLoadingFuel && totalAnomalies > 0 && (
-          <AnomalyAlerts fuelData={fuelReport} />
-        )}
+          {isLoadingFuel ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-32 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Fuel Consumed
+                  </CardTitle>
+                  <IconDroplet className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {totalFuelConsumed.toFixed(2)}L
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    In selected period
+                  </p>
+                </CardContent>
+              </Card>
 
-        {/* Charts Row */}
-        {isLoadingFuel ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Skeleton className="h-[400px] w-full" />
-            <Skeleton className="h-[400px] w-full" />
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            <FuelTrendChart
-              data={fuelReport}
-              dateRange={{ from: fromDate, to: toDate }}
-            />
-            <RouteStatusChart routes={allRoutes} />
-          </div>
-        )}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Avg Consumption
+                  </CardTitle>
+                  <IconGasStation className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {avgConsumption.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Liters per km</p>
+                </CardContent>
+              </Card>
 
-        {/* Bottom Widgets Row */}
-        {isLoadingFuel ? (
-          <div className="grid gap-4 md:grid-cols-2">
+              <Card
+                className={
+                  totalAnomalies > 0
+                    ? "border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950"
+                    : ""
+                }
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle
+                    className={`text-sm font-medium ${
+                      totalAnomalies > 0
+                        ? "text-yellow-600 dark:text-yellow-400"
+                        : ""
+                    }`}
+                  >
+                    Anomalies Detected
+                  </CardTitle>
+                  <IconAlertTriangle
+                    className={`h-4 w-4 ${
+                      totalAnomalies > 0
+                        ? "text-yellow-600 dark:text-yellow-400"
+                        : "text-muted-foreground"
+                    }`}
+                  />
+                </CardHeader>
+                <CardContent>
+                  <div
+                    className={`text-2xl font-bold ${
+                      totalAnomalies > 0
+                        ? "text-yellow-700 dark:text-yellow-300"
+                        : ""
+                    }`}
+                  >
+                    {totalAnomalies}
+                  </div>
+                  <p
+                    className={`text-xs ${
+                      totalAnomalies > 0
+                        ? "text-yellow-600 dark:text-yellow-400"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {totalAnomalies > 0
+                      ? "Requires attention"
+                      : "No anomalies found"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Records
+                  </CardTitle>
+                  <IconFileDescription className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{totalRecords}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Fuel records logged
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {isLoadingFuel ? (
             <Skeleton className="h-[500px] w-full" />
-            <Skeleton className="h-[500px] w-full" />
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          ) : (
             <TopConsumers fuelData={fuelReport} />
-            <ActiveRoutesWidget routes={activeRoutes} />
+          )}
+        </div>
+
+        {/* ROW 4: ACTION ITEMS - What needs fixing? */}
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">
+              Action Items
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Anomalies requiring attention and efficiency patterns
+            </p>
           </div>
-        )}
+
+          {isLoadingFuel ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Skeleton className="h-[400px] w-full" />
+              <Skeleton className="h-[400px] w-full" />
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              <AnomalyAlerts fuelData={fuelReport} />
+              <EfficiencyScatterChart data={fuelReport} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
