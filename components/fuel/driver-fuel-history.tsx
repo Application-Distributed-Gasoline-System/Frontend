@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { IconUser, IconAlertTriangle } from "@tabler/icons-react";
+import { IconUser, IconAlertTriangle, IconDownload } from "@tabler/icons-react";
 
 import {
   Select,
@@ -113,6 +113,38 @@ export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) 
     fetchHistory();
   };
 
+  const handleExportDriver = async () => {
+    if (!fuelHistory) return;
+
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { DriverFuelPDF } = await import("@/lib/pdf/driver-fuel-pdf");
+
+      // Get driver name for the PDF
+      const driverName = selectedDriver?.name || selectedDriverId || "Driver";
+
+      const blob = await pdf(
+        <DriverFuelPDF
+          fuelHistory={fuelHistory}
+          dateRange={{ from: fromDate, to: toDate }}
+          driverName={driverName}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `driver-${driverName.replace(/\s+/g, "-")}-fuel-report.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast.success("PDF exported successfully");
+    } catch (error) {
+      console.error("Failed to export PDF:", error);
+      toast.error("Failed to export PDF");
+    }
+  };
+
   // Get selected driver info for display
   const selectedDriver = drivers.find((d) => d.id === selectedDriverId);
 
@@ -120,13 +152,24 @@ export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) 
     <div className="space-y-6">
       {/* Driver and Date Range Selectors */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2">
             <IconUser className="h-5 w-5" />
             {autoFilterUserId
               ? "Your Fuel Records"
               : "Select Driver and Date Range"}
           </CardTitle>
+          {((selectedDriverId && fuelHistory) ||
+            (autoFilterUserId && fuelHistory?.records.length > 0)) && (
+            <Button
+              onClick={handleExportDriver}
+              variant="outline"
+              size="sm"
+            >
+              <IconDownload className="mr-2 h-4 w-4" />
+              Export Report
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Driver Selector - Only show if NOT auto-filtered */}

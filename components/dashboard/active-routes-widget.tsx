@@ -49,7 +49,15 @@ export function ActiveRoutesWidget({ routes }: ActiveRoutesWidgetProps) {
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
                 <Truck className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{route.code}</span>
+                <span className="text-sm font-medium flex-1">{route.code}</span>
+                <div className="ml-2">
+                  <Badge
+                    variant="outline"
+                    className="bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300"
+                  >
+                    {Number(route.distanceKm).toFixed(2)} km
+                  </Badge>
+                </div>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <User className="h-3 w-3" />
@@ -63,11 +71,6 @@ export function ActiveRoutesWidget({ routes }: ActiveRoutesWidgetProps) {
                   {route.origin} → {route.destination}
                 </span>
               </div>
-            </div>
-            <div className="ml-2">
-              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300">
-                {route.distanceKm} km
-              </Badge>
             </div>
           </div>
         ))}

@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, TrendingUp } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle, ChevronRight } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { FuelReportItem } from "@/lib/types/fuel";
@@ -12,14 +18,14 @@ interface AnomalyAlertsProps {
 }
 
 export function AnomalyAlerts({ fuelData }: AnomalyAlertsProps) {
-  // Filter vehicles with anomalies and sort by severity
   const anomalies = fuelData
     .filter((item) => item.anomaliesDetected > 0)
     .sort((a, b) => b.anomaliesDetected - a.anomaliesDetected)
-    .slice(0, 5); // Show top 5
+    .slice(0, 3); // Reducido a mostrar solo los 3 principales para ahorrar espacio
 
   if (anomalies.length === 0) {
-    return null; // Don't show if no anomalies
+    // Puedes retornar una tarjeta vacía sutil o null si prefieres que desaparezca
+    return null;
   }
 
   const totalAnomalies = anomalies.reduce(
@@ -28,68 +34,68 @@ export function AnomalyAlerts({ fuelData }: AnomalyAlertsProps) {
   );
 
   return (
-    <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950">
-      <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
-      <AlertTitle className="text-yellow-900 dark:text-yellow-100">
-        Fuel Anomalies Detected
-      </AlertTitle>
-      <AlertDescription className="mt-2 space-y-3">
-        <p className="text-sm text-yellow-800 dark:text-yellow-200">
-          {totalAnomalies} anomal{totalAnomalies === 1 ? "y" : "ies"} detected
-          across {anomalies.length} vehicle{anomalies.length === 1 ? "" : "s"}.
-          Please investigate potential fuel theft or leaks.
-        </p>
+    <Card className="">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="flex items-center gap-2">
+          {/* Icono y título más sutiles */}
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
+          <CardTitle className="text-lg font-semibold">
+            Anomaly Alerts
+          </CardTitle>
+        </div>
+        <Button variant="ghost" size="sm" className="h-8 px-2" asChild>
+          <Link href="/dashboard/fuel">
+            View All <ChevronRight className="ml-1 h-4 w-4" />
+          </Link>
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <CardDescription className="mb-4 flex items-center text-sm">
+          <span className="font-medium text-amber-600 dark:text-amber-400 mr-1">
+            {totalAnomalies} issues found
+          </span>
+          <span>
+            across {anomalies.length} vehicle{anomalies.length === 1 ? "" : "s"}
+            .
+          </span>
+        </CardDescription>
 
         <div className="space-y-2">
           {anomalies.map((item) => {
-            // Get the highest delta % from anomaly records
             const maxDelta =
               item.anomalyRecords && item.anomalyRecords.length > 0
                 ? Math.max(...item.anomalyRecords.map((r) => r.deltaPercent))
                 : 0;
 
-            const severity =
-              maxDelta > 20 ? "critical" : maxDelta > 10 ? "warning" : "info";
             const severityColor =
-              severity === "critical"
-                ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                : severity === "warning"
-                  ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
-                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+              maxDelta > 20
+                ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800"
+                : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
 
             return (
               <div
                 key={item.vehicle.id}
-                className="flex items-center justify-between rounded-md border border-yellow-200 bg-white p-3 dark:border-yellow-800 dark:bg-yellow-950/50"
+                className="flex items-center justify-between rounded-lg border p-2 text-sm hover:bg-muted/50 transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-yellow-600" />
-                  <div>
-                    <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
-                      {item.vehicle.plate}
-                    </p>
-                    <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                      {item.anomaliesDetected} anomal
-                      {item.anomaliesDetected === 1 ? "y" : "ies"}
-                    </p>
-                  </div>
+                <div className="flex flex-col">
+                  <span className="font-medium">{item.vehicle.plate}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {item.anomaliesDetected} incident
+                    {item.anomaliesDetected > 1 ? "s" : ""}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge className={severityColor}>
-                    {maxDelta > 0 ? `+${maxDelta.toFixed(1)}%` : "N/A"}
-                  </Badge>
-                </div>
+
+                <Badge
+                  variant="outline"
+                  className={`${severityColor} font-mono`}
+                >
+                  {maxDelta > 0 ? `+${maxDelta.toFixed(1)}%` : "N/A"}
+                </Badge>
               </div>
             );
           })}
         </div>
-
-        <div className="pt-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/fuel">View Fuel Management</Link>
-          </Button>
-        </div>
-      </AlertDescription>
-    </Alert>
+      </CardContent>
+    </Card>
   );
 }

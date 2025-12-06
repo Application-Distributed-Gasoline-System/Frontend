@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MachineryType } from "./vehicle";
 
 // Fuel source enum
 export enum FuelSource {
@@ -35,6 +36,9 @@ export interface FuelRecord {
     model: string;
   };
   routeCode?: string;
+  distanceKm?: number;
+  machineryType?: MachineryType;
+  fuelType?: string;
 }
 
 // Vehicle fuel history response
@@ -54,7 +58,7 @@ export interface VehicleFuelHistory {
   }>;
 }
 
-// Vehicle fuel history response
+// Driver fuel history response
 export interface DriverFuelHistory {
   driverId: string;
   records: FuelRecord[];
@@ -71,6 +75,9 @@ export interface FuelReportItem {
   vehicle: {
     id: number;
     plate: string;
+    machineryType: MachineryType;
+    brand: string;
+    model: string;
   };
   totalLiters: number;
   avgLitersPerKm: number;
@@ -80,6 +87,9 @@ export interface FuelReportItem {
     recordId: string;
     deltaPercent: number;
     liters: number;
+    estimatedFuelL: number,
+    distanceKm: number,
+    recordedAt: string,
   }>;
 }
 

@@ -16,10 +16,10 @@ interface RouteStatusChartProps {
 }
 
 const STATUS_COLORS = {
-  PLANNED: "hsl(var(--chart-1))",     // Blue
-  IN_PROGRESS: "hsl(var(--chart-4))", // Yellow
-  COMPLETED: "hsl(var(--chart-2))",   // Green
-  CANCELLED: "hsl(var(--destructive))", // Red
+  PLANNED: "#3b82f6", // Azul (Blue-500)
+  IN_PROGRESS: "#eab308", // Amarillo (Yellow-500)
+  COMPLETED: "#22c55e", // Verde (Green-500)
+  CANCELLED: "#ef4444", // Rojo (Red-500)
 };
 
 const STATUS_LABELS = {
@@ -30,16 +30,11 @@ const STATUS_LABELS = {
 };
 
 export function RouteStatusChart({ routes }: RouteStatusChartProps) {
-  // Count routes by status
-  const statusCounts = routes.reduce(
-    (acc, route) => {
-      acc[route.status] = (acc[route.status] || 0) + 1;
-      return acc;
-    },
-    {} as Record<RouteStatus, number>
-  );
+  const statusCounts = routes.reduce((acc, route) => {
+    acc[route.status] = (acc[route.status] || 0) + 1;
+    return acc;
+  }, {} as Record<RouteStatus, number>);
 
-  // Transform to chart data
   const chartData = Object.entries(statusCounts).map(([status, count]) => ({
     name: STATUS_LABELS[status as RouteStatus],
     value: count,
@@ -65,22 +60,35 @@ export function RouteStatusChart({ routes }: RouteStatusChartProps) {
                 outerRadius={90}
                 paddingAngle={2}
                 dataKey="value"
+                stroke="none"
               >
                 {chartData.map((entry) => (
                   <Cell
                     key={entry.status}
+                    // Aquí usamos los colores HEX seguros
                     fill={STATUS_COLORS[entry.status]}
                   />
                 ))}
               </Pie>
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "hsl(var(--background))",
+                  backgroundColor: "hsl(var(--popover))",
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "0.5rem",
+                  color: "hsl(var(--popover-foreground))",
+                }}
+                itemStyle={{ color: "hsl(var(--foreground))" }}
+              />
+              {/* CORRECCIÓN: wrapperStyle en Legend para cambiar el color del texto */}
+              <Legend
+                verticalAlign="bottom"
+                height={36}
+                wrapperStyle={{
+                  color: "#888888",
+                  fontSize: "12px",
+                  paddingTop: "10px",
                 }}
               />
-              <Legend />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-4 text-center">

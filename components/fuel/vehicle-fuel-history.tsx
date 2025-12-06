@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { IconCar, IconAlertTriangle } from "@tabler/icons-react";
+import { IconCar, IconAlertTriangle, IconDownload } from "@tabler/icons-react";
 
 import {
   Select,
@@ -105,15 +105,53 @@ export function VehicleFuelHistory() {
     fetchHistory();
   };
 
+  const handleExportVehicle = async () => {
+    if (!fuelHistory) return;
+
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { VehicleFuelPDF } = await import("@/lib/pdf/vehicle-fuel-pdf");
+
+      const blob = await pdf(
+        <VehicleFuelPDF
+          fuelHistory={fuelHistory}
+          dateRange={{ from: fromDate, to: toDate }}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `vehicle-${fuelHistory.vehicle.plate}-fuel-report.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast.success("PDF exported successfully");
+    } catch (error) {
+      console.error("Failed to export PDF:", error);
+      toast.error("Failed to export PDF");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Vehicle and Date Range Selectors */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2">
             <IconCar className="h-5 w-5" />
             Select Vehicle and Date Range
           </CardTitle>
+          {selectedVehicleId && fuelHistory && (
+            <Button
+              onClick={handleExportVehicle}
+              variant="outline"
+              size="sm"
+            >
+              <IconDownload className="mr-2 h-4 w-4" />
+              Export Report
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Vehicle Selector */}
