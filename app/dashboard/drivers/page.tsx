@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Info } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,8 +18,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
-import { IconPlus, IconSteeringWheel } from "@tabler/icons-react";
+import { IconSteeringWheel } from "@tabler/icons-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DriversPage() {
@@ -42,12 +41,7 @@ export default function DriversPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch drivers when page or limit changes
-  useEffect(() => {
-    fetchDrivers();
-  }, [page, limit]);
-
-  const fetchDrivers = async () => {
+  const fetchDrivers = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getDrivers(page, limit);
@@ -65,7 +59,11 @@ export default function DriversPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, limit]);
+
+  useEffect(() => {
+    fetchDrivers();
+  }, [fetchDrivers]);
 
   const handleEditDriver = (driver: Driver) => {
     setSelectedDriver(driver);
@@ -186,8 +184,7 @@ export default function DriversPage() {
           </div>
           <h3 className="mt-4 text-lg font-semibold">No drivers found</h3>
           <p className="mb-4 mt-2 text-sm text-muted-foreground">
-            Drivers will appear here when users with DRIVER role are
-              registered
+            Drivers will appear here when users with DRIVER role are registered
           </p>
         </div>
       ) : (

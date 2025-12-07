@@ -6,14 +6,15 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/a
 export interface ApiError {
   message: string;
   statusCode?: number;
-  originalError?: any;
+  originalError?: unknown;
 }
 
 export interface BackendError {
   message: string;
   statusCode?: number;
   error?: string;
-  [key: string]: any;
+  statusText?: string;
+  [key: string]: unknown;
 }
 
 export interface RetryConfig {

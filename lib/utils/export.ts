@@ -4,7 +4,7 @@
  * @param filename - Name of the CSV file (without .csv extension)
  * @param columns - Column configuration with key and label
  */
-export function exportToCSV<T extends Record<string, any>>(
+export function exportToCSV<T extends object>(
   data: T[],
   filename: string,
   columns: { key: keyof T; label: string }[]

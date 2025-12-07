@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Calculator } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import {
   Dialog,
@@ -77,7 +77,7 @@ export function RouteFormDialog({
       distanceKm: 0.1,
       machineryType: MachineryType.LIGHT,
       driverId: "",
-      vehicleId: undefined as any,
+      vehicleId: undefined,
       estimatedFuelL: undefined,
       originLat: undefined,
       originLon: undefined,
@@ -92,86 +92,11 @@ export function RouteFormDialog({
     name: "machineryType",
   });
 
-  useEffect(() => {
-    if (machineryType && !route) {
-      fetchDrivers(machineryType);
-      fetchVehicles(machineryType);
-
-      form.setValue("driverId", "");
-      form.setValue("vehicleId", 0);
-    }
-  }, [machineryType, route]);
-
-  // Fetch drivers and vehicles when dialog opens
-  useEffect(() => {
-    if (open) {
-      if (route) {
-        // Edit mode: populate form with route data
-        let scheduledAtFormatted = "";
-        if (route.scheduledAt) {
-          try {
-            const date = new Date(route.scheduledAt);
-            scheduledAtFormatted = date.toISOString().slice(0, 16);
-          } catch {
-            scheduledAtFormatted = "";
-          }
-        }
-
-        // Primero resetea con los datos de la ruta
-        form.reset({
-          origin: route.origin,
-          destination: route.destination,
-          distanceKm: Number(route.distanceKm.toFixed(2)),
-          machineryType: route.machineryType,
-          driverId: route.driver.id,
-          vehicleId: route.vehicle.id,
-          scheduledAt: scheduledAtFormatted,
-          estimatedFuelL: route.estimatedFuelL
-            ? Number(route.estimatedFuelL.toFixed(2))
-            : undefined,
-          originLat: undefined,
-          originLon: undefined,
-          destinationLat: undefined,
-          destinationLon: undefined,
-        });
-
-        // Luego carga TODOS los conductores y vehículos del tipo correcto
-        // pero sin filtrar para que aparezca el asignado
-        fetchDriversForEdit(route.machineryType, route.driver.id);
-        fetchVehiclesForEdit(route.machineryType, route.vehicle.id);
-      } else {
-        // Modo creación - comportamiento normal
-        fetchDrivers(MachineryType.LIGHT);
-        fetchVehicles(MachineryType.LIGHT);
-        form.reset({
-          origin: "",
-          destination: "",
-          distanceKm: 0,
-          machineryType: MachineryType.LIGHT,
-          driverId: "",
-          vehicleId: 0,
-          scheduledAt: "",
-          estimatedFuelL: undefined,
-          originLat: undefined,
-          originLon: undefined,
-          destinationLat: undefined,
-          destinationLon: undefined,
-        });
-      }
-    }
-  }, [open, route, form]);
-
-  // Agrega estas funciones nuevas:
-  const fetchDriversForEdit = async (
-    type: MachineryType,
-    currentDriverId: string
-  ) => {
+  const fetchDriversForEdit = useCallback(async (type: MachineryType) => {
     try {
       setLoadingDrivers(true);
       const response = await getDrivers(1, 100);
 
-      // En modo edición, mostramos todos los conductores del tipo correcto
-      // incluyendo el que ya está asignado
       if (type === MachineryType.HEAVY) {
         const heavyDrivers = response.drivers.filter(
           (d) => d.license !== "C" && d.license
@@ -188,12 +113,9 @@ export function RouteFormDialog({
     } finally {
       setLoadingDrivers(false);
     }
-  };
+  }, []);
 
-  const fetchVehiclesForEdit = async (
-    type: MachineryType,
-    currentVehicleId: number
-  ) => {
+  const fetchVehiclesForEdit = useCallback(async (type: MachineryType) => {
     try {
       setLoadingVehicles(true);
       const response = await getVehicles(1, 100);
@@ -216,9 +138,9 @@ export function RouteFormDialog({
     } finally {
       setLoadingVehicles(false);
     }
-  };
+  }, []);
 
-  const fetchDrivers = async (type: MachineryType) => {
+  const fetchDrivers = useCallback(async (type: MachineryType) => {
     try {
       setLoadingDrivers(true);
       const response = await getDrivers(1, 100);
@@ -240,9 +162,9 @@ export function RouteFormDialog({
     } finally {
       setLoadingDrivers(false);
     }
-  };
+  }, []);
 
-  const fetchVehicles = async (type: MachineryType) => {
+  const fetchVehicles = useCallback(async (type: MachineryType) => {
     try {
       setLoadingVehicles(true);
       const response = await getVehicles(1, 100);
@@ -264,7 +186,75 @@ export function RouteFormDialog({
     } finally {
       setLoadingVehicles(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (machineryType && !route) {
+      fetchDrivers(machineryType);
+      fetchVehicles(machineryType);
+
+      form.setValue("driverId", "");
+      form.setValue("vehicleId", 0);
+    }
+  }, [machineryType, route, form, fetchDrivers, fetchVehicles]);
+
+  // Fetch drivers and vehicles when dialog opens
+  useEffect(() => {
+    if (open) {
+      if (route) {
+        let scheduledAtFormatted = "";
+        if (route.scheduledAt) {
+          try {
+            const date = new Date(route.scheduledAt);
+            scheduledAtFormatted = date.toISOString().slice(0, 16);
+          } catch {
+            scheduledAtFormatted = "";
+          }
+        }
+
+        form.reset({
+          origin: route.origin,
+          destination: route.destination,
+          distanceKm: Number(route.distanceKm.toFixed(2)),
+          machineryType: route.machineryType,
+          driverId: route.driver.id,
+          vehicleId: route.vehicle.id,
+          scheduledAt: scheduledAtFormatted,
+          estimatedFuelL: route.estimatedFuelL
+            ? Number(route.estimatedFuelL.toFixed(2))
+            : undefined,
+          originLat: undefined,
+          originLon: undefined,
+          destinationLat: undefined,
+          destinationLon: undefined,
+        });
+
+        fetchDriversForEdit(route.machineryType);
+        fetchVehiclesForEdit(route.machineryType);
+      } else {
+        fetchDrivers(MachineryType.LIGHT);
+        fetchVehicles(MachineryType.LIGHT);
+        form.reset({
+          origin: "",
+          destination: "",
+          distanceKm: 0,
+          machineryType: MachineryType.LIGHT,
+          driverId: "",
+          vehicleId: 0,
+          scheduledAt: "",
+          estimatedFuelL: undefined,
+        });
+      }
+    }
+  }, [
+    open,
+    route,
+    form,
+    fetchDrivers,
+    fetchVehicles,
+    fetchDriversForEdit,
+    fetchVehiclesForEdit,
+  ]);
 
   // Calculate distance when both coordinates are available
   const calculateDistance = async () => {
@@ -325,7 +315,7 @@ export function RouteFormDialog({
     form.reset();
   };
 
-  const handleError = (errors: any) => {
+  const handleError = (errors: unknown) => {
     console.log("Form validation errors:", errors);
   };
 
@@ -354,7 +344,9 @@ export function RouteFormDialog({
               name="origin"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Origin <span className="text-destructive">*</span></FormLabel>
+                  <FormLabel>
+                    Origin <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
                     <AddressCombobox
                       value={field.value}
@@ -374,7 +366,9 @@ export function RouteFormDialog({
               name="destination"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Destination <span className="text-destructive">*</span></FormLabel>
+                  <FormLabel>
+                    Destination <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
                     <AddressCombobox
                       value={field.value}
@@ -395,7 +389,9 @@ export function RouteFormDialog({
                 name="distanceKm"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Distance (km) <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>
+                      Distance (km) <span className="text-destructive">*</span>
+                    </FormLabel>
                     <div className="flex gap-2">
                       <FormControl>
                         <Input
@@ -427,7 +423,9 @@ export function RouteFormDialog({
                 name="machineryType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Machinery Type <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>
+                      Machinery Type <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
@@ -463,7 +461,9 @@ export function RouteFormDialog({
                 name="driverId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Driver <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>
+                      Driver <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
@@ -496,7 +496,9 @@ export function RouteFormDialog({
                 name="vehicleId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vehicle <span className="text-destructive">*</span></FormLabel>
+                    <FormLabel>
+                      Vehicle <span className="text-destructive">*</span>
+                    </FormLabel>
                     <Select
                       onValueChange={(value) => field.onChange(parseInt(value))}
                       value={field.value ? field.value.toString() : ""}

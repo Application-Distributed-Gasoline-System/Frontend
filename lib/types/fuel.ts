@@ -122,7 +122,7 @@ export function mapFuelFormToApi(formData: FuelFormData): CreateFuelRequest {
     formattedRouteId = String(formData.routeId);
   }
 
-  let formattedVehicleId: string = String(formData.vehicleId);
+  const formattedVehicleId: string = String(formData.vehicleId);
 
   return {
     driverId: formData.driverId,

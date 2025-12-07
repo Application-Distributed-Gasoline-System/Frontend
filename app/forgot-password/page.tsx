@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, ArrowLeft, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  Building2,
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -59,12 +65,12 @@ export default function ForgotPasswordPage() {
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
-          <a href="/" className="flex items-center gap-2 font-medium">
+          <Link href="/" className="flex items-center gap-2 font-medium">
             <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
               <Building2 className="size-4" />
             </div>
             Fuel System
-          </a>
+          </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
@@ -78,8 +84,8 @@ export default function ForgotPasswordPage() {
                   </div>
                   <h1 className="text-2xl font-bold">Check your email</h1>
                   <p className="text-muted-foreground">
-                    We&apos;ve sent a password reset link to your email address. Please check
-                    your inbox and follow the instructions.
+                    We&apos;ve sent a password reset link to your email address.
+                    Please check your inbox and follow the instructions.
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -102,8 +108,8 @@ export default function ForgotPasswordPage() {
                 <div className="flex flex-col gap-2 text-center">
                   <h1 className="text-2xl font-bold">Forgot Password</h1>
                   <p className="text-balance text-sm text-muted-foreground">
-                    Enter your email address and we&apos;ll send you a link to reset your
-                    password
+                    Enter your email address and we&apos;ll send you a link to
+                    reset your password
                   </p>
                 </div>
 
@@ -131,7 +137,9 @@ export default function ForgotPasswordPage() {
                 </FieldGroup>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
+                  {isLoading && (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  )}
                   Send Reset Link
                 </Button>
 

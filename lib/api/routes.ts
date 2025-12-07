@@ -5,6 +5,7 @@ import {
   RoutesResponse,
   CreateRouteRequest,
   UpdateRouteRequest,
+  RouteStatus,
   mapApiRouteToRoute,
 } from "../types/route";
 
@@ -113,7 +114,7 @@ export async function deleteRoute(id: number): Promise<void> {
 
 // Start a route (change status to IN_PROGRESS)
 export async function startRoute(id: number): Promise<Route> {
-  return updateRoute(id, { status: "IN_PROGRESS" as any });
+  return updateRoute(id, { status: RouteStatus.IN_PROGRESS });
 }
 
 // Complete a route (change status to COMPLETED with actual fuel)
@@ -122,12 +123,12 @@ export async function completeRoute(
   actualFuelL: number
 ): Promise<Route> {
   return updateRoute(id, {
-    status: "COMPLETED" as any,
+    status: RouteStatus.COMPLETED,
     actualFuelL,
   });
 }
 
 // Cancel a route (change status to CANCELLED)
 export async function cancelRoute(id: number): Promise<Route> {
-  return updateRoute(id, { status: "CANCELLED" as any });
+  return updateRoute(id, { status: RouteStatus.CANCELLED });
 }

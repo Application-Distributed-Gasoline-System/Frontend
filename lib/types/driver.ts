@@ -22,9 +22,6 @@ export interface Driver {
   updatedAt: string; // ISO date string
 }
 
-// Backend API response structure (same as frontend for drivers)
-export interface ApiDriver extends Driver {}
-
 // Zod validation schema for driver update form
 export const driverFormSchema = z.object({
   name: z
@@ -45,7 +42,7 @@ export const driverFormSchema = z.object({
 export type DriverFormData = z.infer<typeof driverFormSchema>;
 
 // Mapping function: API to Frontend (in this case they're the same)
-export function mapApiDriverToDriver(apiDriver: ApiDriver): Driver {
+export function mapApiDriverToDriver(apiDriver: Driver): Driver {
   return apiDriver;
 }
 

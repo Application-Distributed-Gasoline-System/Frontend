@@ -24,7 +24,6 @@ import type { Vehicle } from "@/lib/types/vehicle";
 import type { VehicleFuelHistory } from "@/lib/types/fuel";
 import { getVehicles } from "@/lib/api/vehicles";
 import { getVehicleFuelHistory, getDefaultDateRange } from "@/lib/api/fuel";
-import { useAuth } from "@/contexts/auth-context";
 
 export function VehicleFuelHistory() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);

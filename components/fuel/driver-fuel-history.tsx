@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { IconUser, IconAlertTriangle, IconDownload } from "@tabler/icons-react";
 
@@ -29,7 +29,9 @@ interface DriverFuelHistoryProps {
   autoFilterUserId?: string; // If provided, hide driver selector and auto-filter
 }
 
-export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) {
+export function DriverFuelHistory({
+  autoFilterUserId,
+}: DriverFuelHistoryProps) {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(
     autoFilterUserId || null
@@ -40,22 +42,15 @@ export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) 
   const [loadingDrivers, setLoadingDrivers] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Date range state
+  // Date range state - separate "input" and "applied" states
   const { from: defaultFrom, to: defaultTo } = getDefaultDateRange(30);
   const [fromDate, setFromDate] = useState(defaultFrom);
   const [toDate, setToDate] = useState(defaultTo);
+  // Applied date range - only updates when Apply button is clicked
+  const [appliedFromDate, setAppliedFromDate] = useState(defaultFrom);
+  const [appliedToDate, setAppliedToDate] = useState(defaultTo);
 
-  // Auto-fetch if autoFilterUserId provided, otherwise fetch drivers list
-  useEffect(() => {
-    if (autoFilterUserId) {
-      setLoadingDrivers(false);
-      fetchHistory();
-    } else {
-      fetchDrivers();
-    }
-  }, [autoFilterUserId]);
-
-  const fetchDrivers = async () => {
+  const fetchDrivers = useCallback(async () => {
     try {
       setLoadingDrivers(true);
       const response = await getDrivers(1, 100);
@@ -71,11 +66,11 @@ export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) 
     } finally {
       setLoadingDrivers(false);
     }
-  };
+  }, []);
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     if (!selectedDriverId) {
-      toast.error("Please select a driver");
+      if (!autoFilterUserId) toast.error("Please select a driver");
       return;
     }
 
@@ -83,8 +78,8 @@ export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) 
       setLoadingHistory(true);
       const history = await getDriverFuelHistory(
         selectedDriverId,
-        fromDate,
-        toDate
+        appliedFromDate,
+        appliedToDate
       );
       setFuelHistory(history);
     } catch (error: unknown) {
@@ -98,7 +93,16 @@ export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) 
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, [selectedDriverId, autoFilterUserId, appliedFromDate, appliedToDate]);
+
+  useEffect(() => {
+    if (autoFilterUserId) {
+      setLoadingDrivers(false);
+      fetchHistory();
+    } else {
+      fetchDrivers();
+    }
+  }, [autoFilterUserId, fetchHistory, fetchDrivers]);
 
   const handleDriverChange = (driverId: string) => {
     setSelectedDriverId(driverId);
@@ -110,7 +114,9 @@ export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) 
       toast.error("From date must be before To date");
       return;
     }
-    fetchHistory();
+    // Update the applied dates - this will trigger fetchHistory via useCallback dependency
+    setAppliedFromDate(fromDate);
+    setAppliedToDate(toDate);
   };
 
   const handleExportDriver = async () => {
@@ -134,7 +140,10 @@ export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `driver-${driverName.replace(/\s+/g, "-")}-fuel-report.pdf`;
+      link.download = `driver-${driverName.replace(
+        /\s+/g,
+        "-"
+      )}-fuel-report.pdf`;
       link.click();
       URL.revokeObjectURL(url);
 
@@ -160,11 +169,12 @@ export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) 
               : "Select Driver and Date Range"}
           </CardTitle>
           {((selectedDriverId && fuelHistory) ||
-            (autoFilterUserId && fuelHistory?.records.length > 0)) && (
+            (autoFilterUserId && fuelHistory?.records)) && (
             <Button
               onClick={handleExportDriver}
               variant="outline"
               size="sm"
+              disabled={fuelHistory?.records.length > 0}
             >
               <IconDownload className="mr-2 h-4 w-4" />
               Export Report
@@ -304,7 +314,9 @@ export function DriverFuelHistory({ autoFilterUserId }: DriverFuelHistoryProps) 
                 <CardTitle>
                   {autoFilterUserId
                     ? "Your Fuel History"
-                    : `Fuel History for ${selectedDriver?.name || fuelHistory.driverId}`}
+                    : `Fuel History for ${
+                        selectedDriver?.name || fuelHistory.driverId
+                      }`}
                 </CardTitle>
                 <Badge variant="outline">
                   {fuelHistory.records.length} record
