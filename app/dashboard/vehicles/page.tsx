@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { IconPlus, IconCar } from "@tabler/icons-react";
 import { toast } from "sonner";
 
@@ -42,12 +42,7 @@ export default function VehiclesPage() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  // Fetch vehicles on mount and when pagination changes
-  useEffect(() => {
-    fetchVehicles();
-  }, [page, limit]);
-
-  const fetchVehicles = async () => {
+  const fetchVehicles = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await getVehicles(page, limit);
@@ -65,7 +60,12 @@ export default function VehiclesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, limit]);
+
+  // Fetch vehicles on mount and when pagination changes
+  useEffect(() => {
+    fetchVehicles();
+  }, [fetchVehicles]);
 
   const handleAddVehicle = () => {
     setSelectedVehicle(null);

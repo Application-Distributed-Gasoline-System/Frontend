@@ -65,9 +65,17 @@ export function mapApiUserToUser(apiUser: ApiUser): User {
   };
 }
 
+// API request payload type
+interface ApiUserRequest {
+  email?: string;
+  name?: string;
+  role?: string;
+  active?: boolean;
+}
+
 // Mapping function: Frontend to API request payload (POST/PATCH)
-export function mapUserToApiUser(user: Partial<UserFormData>): any {
-  const apiUser: any = {};
+export function mapUserToApiUser(user: Partial<UserFormData>): ApiUserRequest {
+  const apiUser: ApiUserRequest = {};
 
   if (user.email !== undefined) apiUser.email = user.email;
   if (user.name !== undefined) apiUser.name = user.name;

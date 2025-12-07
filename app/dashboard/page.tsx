@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   IconGasStation,
   IconAlertTriangle,
@@ -46,17 +46,15 @@ export default function DashboardPage() {
   const [activeDrivers, setActiveDrivers] = useState<number>(0);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
-  // Date range state
+  // Date range state - separate "input" and "applied" states
   const { from: defaultFrom, to: defaultTo } = getDefaultDateRange(30);
   const [fromDate, setFromDate] = useState(defaultFrom);
   const [toDate, setToDate] = useState(defaultTo);
+  // Applied date range - only updates when Apply button is clicked
+  const [appliedFromDate, setAppliedFromDate] = useState(defaultFrom);
+  const [appliedToDate, setAppliedToDate] = useState(defaultTo);
 
-  // Fetch dashboard data on mount
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setIsLoadingStats(true);
       setIsLoadingFuel(true);
@@ -64,10 +62,10 @@ export default function DashboardPage() {
       // Fetch all data in parallel
       const [vehiclesData, driversData, routesData, fuelData] =
         await Promise.all([
-          getVehicles(1, 100),
-          getDrivers(1, 100),
-          getRoutes(1, 1000),
-          getFuelReport(fromDate, toDate),
+          getVehicles(1, 50),
+          getDrivers(1, 50),
+          getRoutes(1, 100),
+          getFuelReport(appliedFromDate, appliedToDate),
         ]);
 
       // Set vehicle stats
@@ -95,32 +93,19 @@ export default function DashboardPage() {
       setIsLoadingStats(false);
       setIsLoadingFuel(false);
     }
-  };
+  }, [appliedFromDate, appliedToDate]);
 
-  const fetchFuelReport = async () => {
-    try {
-      setIsLoadingFuel(true);
-      const report = await getFuelReport(fromDate, toDate);
-      setFuelReport(report);
-    } catch (error: unknown) {
-      let errorMessage = "Failed to fetch fuel report";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
-      }
-      toast.error(errorMessage);
-    } finally {
-      setIsLoadingFuel(false);
-    }
-  };
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const handleApplyDateRange = () => {
     if (fromDate > toDate) {
       toast.error("From date must be before To date");
       return;
     }
-    fetchFuelReport();
+    setAppliedFromDate(fromDate);
+    setAppliedToDate(toDate);
   };
 
   const handleExportDashboard = async () => {

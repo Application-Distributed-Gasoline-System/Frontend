@@ -2,7 +2,6 @@ import { apiClient, makeApiCall, API_BASE_URL } from "./client";
 import {
   Driver,
   DriverFormData,
-  ApiDriver,
   mapApiDriverToDriver,
 } from "../types/driver";
 
@@ -17,7 +16,7 @@ interface DriversResponse {
 
 // Response type from API
 interface ApiDriversResponse {
-  drivers: ApiDriver[];
+  drivers: Driver[];
   total: number;
   page: number;
   totalPages: number;
@@ -52,7 +51,7 @@ export async function getDrivers(
 
 // Get driver by ID
 export async function getDriverById(id: string): Promise<Driver> {
-  const data = await makeApiCall<ApiDriver>(
+  const data = await makeApiCall<Driver>(
     () => apiClient.get(`${API_BASE_URL}/drivers/${id}`),
     "Failed to fetch driver"
   );
@@ -66,7 +65,7 @@ export async function updateDriver(
   driverData: Partial<DriverFormData>
 ): Promise<Driver> {
   // Prepare the update payload
-  const updatePayload: any = {};
+  const updatePayload: Partial<Driver> = {};
 
   if (driverData.name !== undefined) updatePayload.name = driverData.name;
   if (driverData.license !== undefined) updatePayload.license = driverData.license;
@@ -77,7 +76,7 @@ export async function updateDriver(
     updatePayload.birthDate = new Date(driverData.birthDate).toISOString();
   }
 
-  const data = await makeApiCall<ApiDriver>(
+  const data = await makeApiCall<Driver>(
     () => apiClient.patch(`${API_BASE_URL}/drivers/${id}`, updatePayload),
     "Failed to update driver"
   );

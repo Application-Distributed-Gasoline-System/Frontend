@@ -4,7 +4,6 @@ import {
   VehicleFuelHistory,
   FuelReportItem,
   FuelFormData,
-  CreateFuelRequest,
   mapFuelFormToApi,
   DriverFuelHistory,
 } from "@/lib/types/fuel";

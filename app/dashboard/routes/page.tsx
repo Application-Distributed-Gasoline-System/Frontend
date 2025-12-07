@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -61,14 +61,7 @@ export default function RoutesPage() {
 
   const { user } = useAuth();
 
-  // Fetch routes when page or limit changes
-  useEffect(() => {
-    if (user) {
-      fetchRoutes();
-    }
-  }, [page, limit, user]);
-
-  const fetchRoutes = async () => {
+  const fetchRoutes = useCallback(async () => {
     if (!user) {
       setRoutes([]);
       setIsLoading(false);
@@ -100,7 +93,12 @@ export default function RoutesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, limit, user]);
+
+  // Fetch routes when page or limit changes
+  useEffect(() => {
+    fetchRoutes();
+  }, [fetchRoutes]);
 
   const handleAddRoute = () => {
     setSelectedRoute(null);

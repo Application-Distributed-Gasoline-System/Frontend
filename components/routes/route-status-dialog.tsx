@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { Route, RouteStatus } from "@/lib/types/route";
+import { Route } from "@/lib/types/route";
 
 type StatusAction = "start" | "complete" | "cancel";
 

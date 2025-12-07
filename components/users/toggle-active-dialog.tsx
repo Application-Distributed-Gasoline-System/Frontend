@@ -33,7 +33,6 @@ export function ToggleActiveDialog({
   if (!user) return null;
 
   const action = user.active ? "deactivate" : "activate";
-  const actionPastTense = user.active ? "deactivated" : "activated";
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

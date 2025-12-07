@@ -4,8 +4,7 @@ import {
   formatDate,
   formatDateTime,
   formatNumber,
-  getFuelSourceLabel,
-  calculateEfficiency,
+  getFuelSourceLabel
 } from "./pdf-utils";
 import type { DriverFuelHistory } from "../types/fuel";
 

@@ -87,7 +87,9 @@ const getStatusBadgeClass = (status: RouteStatus) => {
 };
 
 // Machinery type badge colors
-const getMachineryBadgeVariant = (type: MachineryType) => {
+const getMachineryBadgeVariant = (
+  type: MachineryType
+): "default" | "secondary" | "outline" | "destructive" => {
   switch (type) {
     case MachineryType.LIGHT:
       return "secondary";
@@ -179,7 +181,7 @@ export function RoutesTable({
       cell: ({ row }) => {
         const type = row.getValue("machineryType") as MachineryType;
         return (
-          <Badge variant={getMachineryBadgeVariant(type) as any}>
+          <Badge variant={getMachineryBadgeVariant(type)}>
             {getMachineryTypeDisplayName(type)}
           </Badge>
         );
