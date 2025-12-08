@@ -164,7 +164,7 @@ export default function DriversPage() {
 
       {/* Info message about auto-creation */}
       <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
-        <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+        <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
         <p className="text-sm text-blue-800 dark:text-blue-200">
           Drivers are automatically created when users with the DRIVER role are
           registered. You can update their details or delete them here.

@@ -263,7 +263,7 @@ export default function RoutesPage() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight">
+          <h1 className="mt-2 text-2xl font-bold tracking-tight mr-2">
             Routes Management
           </h1>
           <p className="text-sm text-muted-foreground">
