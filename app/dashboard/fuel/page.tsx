@@ -74,7 +74,7 @@ export default function FuelPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Fuel Management</h1>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight">Fuel Management</h1>
           <p className="text-muted-foreground">
             {user?.role === "DRIVER"
               ? "View your fuel consumption records"

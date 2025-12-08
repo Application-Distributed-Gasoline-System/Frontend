@@ -42,13 +42,10 @@ export function DriverFuelHistory({
   const [loadingDrivers, setLoadingDrivers] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Date range state - separate "input" and "applied" states
+  // Date range state
   const { from: defaultFrom, to: defaultTo } = getDefaultDateRange(30);
   const [fromDate, setFromDate] = useState(defaultFrom);
   const [toDate, setToDate] = useState(defaultTo);
-  // Applied date range - only updates when Apply button is clicked
-  const [appliedFromDate, setAppliedFromDate] = useState(defaultFrom);
-  const [appliedToDate, setAppliedToDate] = useState(defaultTo);
 
   const fetchDrivers = useCallback(async () => {
     try {
@@ -68,7 +65,7 @@ export function DriverFuelHistory({
     }
   }, []);
 
-  const fetchHistory = useCallback(async () => {
+  const fetchHistory = async () => {
     if (!selectedDriverId) {
       if (!autoFilterUserId) toast.error("Please select a driver");
       return;
@@ -78,8 +75,8 @@ export function DriverFuelHistory({
       setLoadingHistory(true);
       const history = await getDriverFuelHistory(
         selectedDriverId,
-        appliedFromDate,
-        appliedToDate
+        fromDate,
+        toDate
       );
       setFuelHistory(history);
     } catch (error: unknown) {
@@ -93,7 +90,7 @@ export function DriverFuelHistory({
     } finally {
       setLoadingHistory(false);
     }
-  }, [selectedDriverId, autoFilterUserId, appliedFromDate, appliedToDate]);
+  };
 
   useEffect(() => {
     if (autoFilterUserId) {
@@ -102,7 +99,8 @@ export function DriverFuelHistory({
     } else {
       fetchDrivers();
     }
-  }, [autoFilterUserId, fetchHistory, fetchDrivers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFilterUserId]);
 
   const handleDriverChange = (driverId: string) => {
     setSelectedDriverId(driverId);
@@ -114,9 +112,7 @@ export function DriverFuelHistory({
       toast.error("From date must be before To date");
       return;
     }
-    // Update the applied dates - this will trigger fetchHistory via useCallback dependency
-    setAppliedFromDate(fromDate);
-    setAppliedToDate(toDate);
+    fetchHistory();
   };
 
   const handleExportDriver = async () => {

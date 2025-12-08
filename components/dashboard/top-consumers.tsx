@@ -83,24 +83,24 @@ export function TopConsumers({ fuelData }: TopConsumersProps) {
           {topConsumers.map((vehicle, index) => (
             <div
               key={vehicle.plate}
-              className="flex items-center justify-between rounded-md border p-3"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-md border p-3"
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
                   {index + 1}
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   {vehicle.machineryType === MachineryType.LIGHT ? (
-                    <IconCar className="h-4 w-4 text-muted-foreground" />
+                    <IconCar className="h-4 w-4 shrink-0 text-muted-foreground" />
                   ) : (
-                    <IconTruck className="h-4 w-4 text-muted-foreground" />
+                    <IconTruck className="h-4 w-4 shrink-0 text-muted-foreground" />
                   )}
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-medium">
                         {vehicle.brand} {vehicle.model}
                       </p>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
                         ({vehicle.plate})
                       </span>
                       {vehicle.hasAnomalies && (
@@ -115,7 +115,7 @@ export function TopConsumers({ fuelData }: TopConsumersProps) {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 sm:shrink-0 pl-9 sm:pl-0">
                 <Badge
                   variant={
                     vehicle.efficiency === "excellent"
