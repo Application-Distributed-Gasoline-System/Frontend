@@ -2,7 +2,11 @@
 
 Panel web para gestionar una flota de vehículos: conductores, vehículos, rutas, combustible y usuarios.
 
-![Pantalla de inicio de sesión](docs/login.png)
+![Tablero con vehículos, conductores, rutas y tasa de anomalías](docs/tablero.png)
+
+![Gestión de vehículos con búsqueda, columnas y exportación](docs/vehiculos.png)
+
+Capturas con el sistema completo corriendo en local con Docker y datos de prueba.
 
 Proyecto de Aplicaciones Distribuidas · Universidad Técnica de Ambato. El backend, con los microservicios y la API gateway, está en [Backend](https://github.com/Application-Distributed-Gasoline-System/Backend).
 
